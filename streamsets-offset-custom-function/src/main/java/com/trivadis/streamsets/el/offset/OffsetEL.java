@@ -1,3 +1,4 @@
+package com.trivadis.streamsets.el.offset;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,15 +33,17 @@ public class OffsetEL {
 		File file = getOffsetFile(key);
 		
 		BufferedWriter writer = null;
+		file.getParentFile().mkdirs();
 		try {
-			file.getParentFile().mkdirs();
 			writer = new BufferedWriter(new FileWriter(file));
 			writer.write(offset);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
 			try {
-				writer.close();
+				if (writer != null) {
+					writer.close();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
