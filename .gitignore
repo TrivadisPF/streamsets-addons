@@ -6,3 +6,5 @@ streamsets-offset-custom-function/.settings/org.eclipse.jdt.core.prefs
 custom-offset-el/.classpath
 custom-offset-el/.project
 custom-offset-el/target/**
+utah-parser/.classpath
+utah-parser/.project
