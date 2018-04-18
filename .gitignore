@@ -5,3 +5,4 @@ streamsets-offset-custom-function/.settings/org.eclipse.jdt.core.prefs
 *.prefs
 custom-offset-el/.classpath
 custom-offset-el/.project
+custom-offset-el/target/**
