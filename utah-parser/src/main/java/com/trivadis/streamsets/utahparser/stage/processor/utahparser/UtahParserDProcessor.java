@@ -22,7 +22,7 @@ import com.streamsets.pipeline.api.GenerateResourceBundle;
 import com.streamsets.pipeline.api.StageDef;
 
 
-@StageDef(version = 1, label = "Utah Parser Processor", description = "", icon = "default.png", onlineHelpRefUrl = "")
+@StageDef(version = 1, label = "Utah Parser Processor", description = "", icon = "utah-parser.png", onlineHelpRefUrl = "")
 @ConfigGroups(Groups.class)
 @GenerateResourceBundle
 public class UtahParserDProcessor extends UtahParserProcessor {
