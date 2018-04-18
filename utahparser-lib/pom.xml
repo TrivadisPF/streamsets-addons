@@ -20,8 +20,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.utahparser.stagelib</groupId>
-  <artifactId>utah-parser</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>utahparser-lib</artifactId>
+  <version>1.0.0-rc1</version>
 
   <properties>
     <streamsets.version>3.1.3.0</streamsets.version>
