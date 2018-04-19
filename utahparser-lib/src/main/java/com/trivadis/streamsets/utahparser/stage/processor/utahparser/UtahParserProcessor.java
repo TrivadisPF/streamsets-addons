@@ -52,7 +52,6 @@ public abstract class UtahParserProcessor extends SingleLaneRecordProcessor {
 	/** {@inheritDoc} */
 	@Override
 	protected void process(Record record, SingleLaneBatchMaker batchMaker) throws StageException {
-		System.out.println("Input record: " + record);
 
 		Field field = record.get(getFieldPathToParse());
 		if (field == null) {
@@ -97,7 +96,6 @@ public abstract class UtahParserProcessor extends SingleLaneRecordProcessor {
 							record.set("/" + key, listMap.get(key));
 						}
 					}
-					System.out.println("adding record: " + record);
 					batchMaker.addRecord(record);
 				}
 			}
