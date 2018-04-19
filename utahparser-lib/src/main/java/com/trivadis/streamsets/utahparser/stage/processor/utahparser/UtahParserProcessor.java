@@ -18,10 +18,13 @@ package com.trivadis.streamsets.utahparser.stage.processor.utahparser;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.xml.bind.JAXBException;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.sonalake.utah.Parser;
 import com.sonalake.utah.config.Config;
@@ -35,61 +38,72 @@ import com.trivadis.streamsets.utahparser.stage.lib.sample.Errors;
 
 public abstract class UtahParserProcessor extends SingleLaneRecordProcessor {
 	/**
-	   * Gives access to the UI configuration of the stage provided by the {@link SampleDProcessor} class.
-	   */
-  public abstract String getFieldPathToParse();
-  public abstract String getParsedFieldPath();
-  public abstract String getTemplate();
+	 * Gives access to the UI configuration of the stage provided by the
+	 * {@link SampleDProcessor} class.
+	 */
+	public abstract String getFieldPathToParse();
+	
+	public abstract boolean isKeepOriginalFields();
+
+	public abstract String getOutputField();
+
+	public abstract String getTemplate();
 
 	/** {@inheritDoc} */
-  @Override
-  protected void process(Record record, SingleLaneBatchMaker batchMaker) throws StageException {
-	System.out.println("Input record: " + record);  
-	  
-	  
-	Field field = record.get(getFieldPathToParse());
-	if (field == null) {
-	   throw new OnRecordErrorException(Errors.UTAHP_00, record.getHeader().getSourceId(), getFieldPathToParse());
-	} else {
+	@Override
+	protected void process(Record record, SingleLaneBatchMaker batchMaker) throws StageException {
+		System.out.println("Input record: " + record);
+
+		Field field = record.get(getFieldPathToParse());
+		if (field == null) {
+			throw new OnRecordErrorException(Errors.UTAHP_00, record.getHeader().getSourceId(), getFieldPathToParse());
+		} else {
+
+		}
+		String value = field.getValueAsString();
 		
-	}
-	String value = field.getValueAsString();
-
-    Config config = null;
-	try {
-		config = new ConfigLoader().loadConfig(new StringReader(getTemplate()));
-	} catch (JAXBException ex) {
-    	throw new OnRecordErrorException(Errors.UTAHP_01, record.getHeader().getSourceId(),
-    			ex.toString(), ex);
-	}
+		if (!isKeepOriginalFields()) {
+			record.delete(getFieldPathToParse());
+		}	
 		
-	try (Reader in = new StringReader(value)) {
-      Parser parser = Parser.parse(config, in);
-      while (true) {
-        Map<String, String> values = parser.next();
-        if (null == record) {
-          break;
-        } else {
-          if (values != null) {
-              LinkedHashMap<String, Field> listMap = new LinkedHashMap<>();
+		Config config = null;
+		try {
+			config = new ConfigLoader().loadConfig(new StringReader(getTemplate()));
+		} catch (JAXBException ex) {
+			throw new OnRecordErrorException(Errors.UTAHP_01, record.getHeader().getSourceId(), ex.toString(), ex);
+		}
 
-	          for (String key : values.keySet()) {
-	        	  String val = values.get(key);
-	        	  Field f = Field.create(val);
-	        	  listMap.put(key, f);
-	          }
-	          record.set(getParsedFieldPath(), Field.createListMap(listMap));
+		System.out.println("Template parsed successfully!");
 
-	          batchMaker.addRecord(record);
-          }
-        }
-      }
-    } catch (IOException ex) {
-    	throw new OnRecordErrorException(Errors.UTAHP_01, record.getHeader().getSourceId(),
-    			ex.toString(), ex);
+		try (Reader in = new StringReader(value)) {
+			Parser parser = Parser.parse(config, in);
+			while (true) {
+				Map<String, String> values = parser.next();
+				if (null == values) {
+					break;
+				} else {
+					LinkedHashMap<String, Field> listMap = new LinkedHashMap<>();
+
+					for (String key : values.keySet()) {
+						String val = values.get(key);
+						Field f = Field.create(val);
+						listMap.put(key, f);
+					}
+					
+					if (isKeepOriginalFields() && !StringUtils.isEmpty(getOutputField())) {
+						record.set("/" + getOutputField(), Field.createListMap(listMap));
+					} else {
+						for(String key : listMap.keySet()) {
+							record.set("/" + key, listMap.get(key));
+						}
+					}
+					System.out.println("adding record: " + record);
+					batchMaker.addRecord(record);
+				}
+			}
+		} catch (IOException ex) {
+			throw new OnRecordErrorException(Errors.UTAHP_01, record.getHeader().getSourceId(), ex.toString(), ex);
+		}
+
 	}
-
-	
-  }
-
 }

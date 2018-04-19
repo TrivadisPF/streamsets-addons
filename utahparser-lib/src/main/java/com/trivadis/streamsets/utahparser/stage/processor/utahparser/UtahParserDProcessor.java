@@ -32,28 +32,42 @@ public class UtahParserDProcessor extends UtahParserProcessor {
 			type = ConfigDef.Type.MODEL, 
 			defaultValue = "", 
 			label = "Field to Parse", 
-			description = "String field that contains an semi-structured text data to be parsed by the Utah-Parser", 
+			description = "The field containing the semi-structured text data to be parsed by the Utah-Parser", 
 			displayPosition = 10, 
 			group = "PARSER")
 	@FieldSelectorModel(singleValued = true)
 	public String fieldPathToParse;
 	
+	  @ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.BOOLEAN,
+		      defaultValue = "true",
+		      label = "Keep Original Field",
+		      description = "Whether the original fields should be kept. " +
+		          "If this is set, the root field of the record must be a Map or List Map.",
+		      displayPosition = 20,
+		      group = "PARSER"
+		  )
+		public boolean keepOriginalFields;
+	
 	@ConfigDef(
 			required = true,
 			type = ConfigDef.Type.STRING,
 			defaultValue = "/",
-			label = "New Parsed Field",
-			description="Name of the new field to set the parsed text data",
-			displayPosition = 20,
-			group = "PARSER"
+			label = "Output Field",
+			description="Output field into which the unstructured text will be parsed. Use empty value to write directly to root of the record.",
+			displayPosition = 30,
+			group = "PARSER",
+		    dependsOn = "keepOriginalFields",
+		    triggeredByValue = "true"
 			)
-	public String parsedFieldPath;
+	public String outputField;
 	
 	@ConfigDef(required = true, 
 			type = ConfigDef.Type.TEXT, 
 			defaultValue = "default", 
 			label = "Utah Parser Template in XML format", 
-			displayPosition = 30, 
+			displayPosition = 40, 
 			group = "PARSER")
 	public String template;
 	
@@ -62,10 +76,15 @@ public class UtahParserDProcessor extends UtahParserProcessor {
 	public String getFieldPathToParse() {
 		return fieldPathToParse;
 	}
+	
+	@Override
+	public boolean isKeepOriginalFields() {
+		return keepOriginalFields;
+	}
 
 	@Override
-	public String getParsedFieldPath() {
-		return parsedFieldPath;
+	public String getOutputField() {
+		return outputField;
 	}
 
 	@Override

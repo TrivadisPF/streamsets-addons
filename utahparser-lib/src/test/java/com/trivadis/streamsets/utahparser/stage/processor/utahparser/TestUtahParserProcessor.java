@@ -70,6 +70,7 @@ public class TestUtahParserProcessor {
 	ProcessorRunner runner = new ProcessorRunner.Builder(UtahParserDProcessor.class, null)
         .addConfiguration("template", template)
         .addConfiguration("fieldPathToParse", "/value")
+        .addConfiguration("parsedFieldPath", "/output")
         .setExecutionMode(ExecutionMode.STANDALONE)
         .setResourcesDir("/tmp")
         .addOutputLane("output")
