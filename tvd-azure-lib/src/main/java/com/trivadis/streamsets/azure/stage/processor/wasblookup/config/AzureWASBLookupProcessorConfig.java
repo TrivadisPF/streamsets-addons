@@ -47,7 +47,7 @@ public class AzureWASBLookupProcessorConfig {
   @ConfigDef(
 		    required = true,
 		    type = ConfigDef.Type.MODEL,
-		    label = "Container",
+		    label = "Field with Container",
 		    description = "Name of the container",
 				    dependencies = {
 					    	  @Dependency(configName = "containerFromField", triggeredByValues = "true")
