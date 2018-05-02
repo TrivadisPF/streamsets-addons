@@ -18,8 +18,8 @@ package com.trivadis.streamsets.azure.stage.processor.wasblookup.config;
 import com.streamsets.pipeline.api.Label;
 
 public enum OutputModeType implements Label {
-  AS_RECORDS("Create records fir each line in object"),
-  AS_BLOB("Create one line wiht complete object")
+  AS_RECORDS("Create records for each line in object"),
+  AS_BLOB("Create one line (blob) with complete object")
   ;
 
   private String label;
