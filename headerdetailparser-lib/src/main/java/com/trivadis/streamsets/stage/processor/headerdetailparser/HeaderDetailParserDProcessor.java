@@ -69,7 +69,7 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 			)
 	public String outputField;
 
-	  @ConfigDef(
+	@ConfigDef(
 		      required = false,
 		      type = ConfigDef.Type.MODEL,
 		      defaultValue = "",
@@ -81,7 +81,7 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 	@ListBeanModel
 	public List<HeaderExtractorConfig> headerExtractorConfigs;
 	
-	  @ConfigDef(
+	@ConfigDef(
 		      required = false,
 		      type = ConfigDef.Type.NUMBER,
 		      defaultValue = "",
