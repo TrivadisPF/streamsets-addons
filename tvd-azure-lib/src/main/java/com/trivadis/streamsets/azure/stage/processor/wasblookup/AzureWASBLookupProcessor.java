@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +49,7 @@ import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.AzureWASB
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.DataFormatType;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.StringFileRef;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.WASBFileRef;
-
-import AmazonS3Util.AzureWASBUtil;
+import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
 /**
  * This executor is an example and does not actually perform any actions.
@@ -107,6 +107,8 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 			String objectPath = (getConfig().objectPathFromField) ?
 									record.get(getConfig().fieldWithObjectPath).getValueAsString() :
 									getConfig().objectPath;
+			// remove leading / if there						
+			objectPath = StringUtils.removeStart(objectPath, "/");
 
 			if (containerName == null || containerName.isEmpty()) {
 				throw new OnRecordErrorException(record, Errors.WASB_EXECUTOR_0003);

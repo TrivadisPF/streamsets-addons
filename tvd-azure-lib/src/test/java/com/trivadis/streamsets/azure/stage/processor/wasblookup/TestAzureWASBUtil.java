@@ -17,8 +17,7 @@ import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.credential.CredentialValue;
-
-import AmazonS3Util.AzureWASBUtil;
+import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
 public class TestAzureWASBUtil {
 	private final static String TEST_CONTAINER = "raw-data";
@@ -69,4 +68,13 @@ public class TestAzureWASBUtil {
 		assertEquals(10893476, utf8str.length(), 10893476);
 	}
 
+	@Test
+	public void testGetObjectWithLeadingSlashInObjectName() throws IOException {
+		InputStream is = AzureWASBUtil.getObject(blobClient, TEST_CONTAINER, "/" + TEST_OBJECT_PATH, true);
+		InputStreamReader inr = new InputStreamReader(is, "UTF-8");
+		String utf8str = IOUtils.toString(inr);
+
+		assertNotNull(utf8str);
+		assertEquals(10893476, utf8str.length(), 10893476);
+	}
 }

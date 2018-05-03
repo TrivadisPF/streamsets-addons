@@ -15,8 +15,7 @@ import com.streamsets.pipeline.api.FileRef;
 import com.streamsets.pipeline.api.ProtoConfigurableEntity.Context;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.credential.CredentialValue;
-
-import AmazonS3Util.AzureWASBUtil;
+import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
 public class WASBFileRef extends FileRef {
 	private final boolean useSSE;
