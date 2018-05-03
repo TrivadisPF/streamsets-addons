@@ -21,7 +21,6 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.azure</groupId>
   <artifactId>tvd-azure-lib</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <properties>
     <streamsets.version>3.2.0.0</streamsets.version>
@@ -128,4 +127,5 @@
       </plugin>
     </plugins>
   </build>
+  <version>0.1.0</version>
 </project>
