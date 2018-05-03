@@ -19,10 +19,14 @@ import java.util.List;
 
 import com.streamsets.pipeline.api.ConfigDef;
 import com.streamsets.pipeline.api.ConfigGroups;
+import com.streamsets.pipeline.api.Dependency;
 import com.streamsets.pipeline.api.FieldSelectorModel;
 import com.streamsets.pipeline.api.GenerateResourceBundle;
 import com.streamsets.pipeline.api.ListBeanModel;
 import com.streamsets.pipeline.api.StageDef;
+import com.streamsets.pipeline.api.ValueChooserModel;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatChooserValues;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
 
 
 @StageDef(version = 1, 
@@ -34,11 +38,26 @@ import com.streamsets.pipeline.api.StageDef;
 @GenerateResourceBundle
 public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 
+	@ConfigDef(
+		    required = true,
+		    type = ConfigDef.Type.MODEL,
+		    defaultValue = "AS_RECORDS",
+		    label = "Input Data Format",
+		    description = "How should the output be produced.",
+		    group = "PARSER",
+		    displayPosition = 0
+		  )
+	@ValueChooserModel(DataFormatChooserValues.class)
+	public DataFormatType dataFormat = DataFormatType.AS_RECORDS;
+	
 	@ConfigDef(required = true, 
 			type = ConfigDef.Type.MODEL, 
 			defaultValue = "", 
 			label = "Field to Parse", 
 			description = "The field containing the semi-structured text data to be parsed by the Utah-Parser", 
+			dependencies = {
+					@Dependency(configName = "dataFormat", triggeredByValues = {"AS_RECORDS", "AS_BLOB"})
+			},  
 			displayPosition = 10, 
 			group = "PARSER")
 	@FieldSelectorModel(singleValued = true)
@@ -83,6 +102,17 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 	
 	@ConfigDef(
 		      required = false,
+		      type = ConfigDef.Type.STRING,
+		      defaultValue = "",
+		      label = "Header/Detail Separator",
+		      description="A regular expression which identifiey a given line as a spearator line between the headers and the detail lines",
+		      displayPosition = 45,
+		      group = "PARSER"
+		  )
+	public String headerDetailSeparator;	 
+
+	@ConfigDef(
+		      required = false,
 		      type = ConfigDef.Type.NUMBER,
 		      defaultValue = "",
 		      label = "Number of Header Lines",
@@ -102,8 +132,20 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 		      displayPosition = 60,
 		      group = "PARSER"
 		  )
+	public String detailLineField;	 
+/*
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.STRING,
+		      defaultValue = "detail",
+		      label = "Detail Line Field",
+		      description="Output field into which the detail line will parsed.",
+		      displayPosition = 60,
+		      group = "PARSER"
+		  )
+	public boolean split;	 
+*/	
 
-	public String detailLineField;	  
 
 	@Override
 	public String getFieldPathToParse() {
@@ -126,6 +168,11 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 	}
 
 	@Override
+	public String getHeaderDetailSeparator() {
+		return headerDetailSeparator;
+	}
+
+	@Override
 	public Integer getNofHeaderLines() {
 		return nofHeaderLines;
 	}
@@ -134,5 +181,9 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 	public String getDetailLineField() {
 		return detailLineField;
 	}
-
+	
+	@Override
+	public DataFormatType getDataFormat() {
+		return dataFormat;
+	}
 }

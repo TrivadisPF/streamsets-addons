@@ -13,26 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.trivadis.streamsets.stage.processor.headerdetailparser;
+package com.trivadis.streamsets.stage.processor.headerdetailparser.config;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
 import com.streamsets.pipeline.api.Label;
 
-@GenerateResourceBundle
-public enum Groups implements Label {
-  PARSER("Parse"),
-  DATA_FORMAT("Data Format"),
+public enum DataFormatType implements Label {
+  AS_RECORDS("Text"),
+  AS_BLOB("Text (Blob)"),
+  AS_WHOLE_FILE("Whole File")
   ;
 
-  private final String label;
+  private String label;
 
-  private Groups(String label) {
+  DataFormatType(String label) {
     this.label = label;
   }
 
-  /** {@inheritDoc} */
   @Override
   public String getLabel() {
-    return this.label;
+    return label;
   }
 }

@@ -15,6 +15,8 @@
  */
 package com.trivadis.streamsets.stage.processor.headerdetailparser;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,10 +37,12 @@ import com.streamsets.pipeline.sdk.RecordCreator;
 import com.streamsets.pipeline.sdk.StageRunner;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.HeaderDetailParserDProcessor;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.HeaderExtractorConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
 
 import _ss_com.com.google.common.collect.ImmutableList;
 import _ss_com.streamsets.datacollector.util.Configuration;
 import _ss_org.apache.commons.io.IOUtils;
+import _ss_org.apache.commons.lang3.StringUtils;
 
 public class TestHeaderDetailParserProcessor {
 	
@@ -75,10 +79,13 @@ public class TestHeaderDetailParserProcessor {
     
 	ProcessorRunner runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, null)
         .addConfiguration("fieldPathToParse", "/value")
+        .addConfiguration("dataFormat", DataFormatType.AS_BLOB)
         .addConfiguration("keepOriginalFields", false)
         .addConfiguration("headerExtractorConfigs", headerExtractorConfigs)
-        .addConfiguration("nofHeaderLines", 17)
+        .addConfiguration("headerDetailSeparator", "^-----")
+//        .addConfiguration("nofHeaderLines", 14)
         .addConfiguration("outputField", "/")
+        .addConfiguration("detailLineField", "detail")
         .setExecutionMode(ExecutionMode.STANDALONE)
         .setResourcesDir("/tmp")
         .addOutputLane("output")
@@ -93,7 +100,10 @@ public class TestHeaderDetailParserProcessor {
 
       List<Record> op = output.getRecords().get("output");
       
-      System.out.println(op.get(0));
+      System.out.println(op.get(0).get("/detail").getValueAsString());
+      
+      assertEquals(16 , op.size());
+      assertEquals("11:02:12.000", StringUtils.substring(op.get(0).get("/detail").getValueAsString(), 0, 12));
 
     } finally {
       runner.runDestroy();

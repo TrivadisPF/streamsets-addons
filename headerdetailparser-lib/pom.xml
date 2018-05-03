@@ -21,11 +21,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.headerdetailparser.stagelib</groupId>
   <artifactId>headerdetailparser-lib</artifactId>
-  <version>1.0.0</version>
+  <version>0.1.0</version>
 
   <properties>
     <streamsets.version>3.2.0.0</streamsets.version>
     <utahparser.version>1.0.1</utahparser.version>
+    <commons-lang.version>3.7</commons-lang.version>
+    <commons-io.version>2.6</commons-io.version>
     <slf4j.version>1.7.7</slf4j.version>
     <junit.version>4.12</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -52,11 +54,28 @@
       <version>${slf4j.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.streamsets</groupId>
+      <artifactId>streamsets-datacollector-sdk</artifactId>
+      <version>${streamsets.version}</version>
+      <scope>provided</scope>
+    </dependency> 
+    <dependency>
+      <groupId>com.streamsets</groupId>
+      <artifactId>streamsets-datacollector-common</artifactId>
+      <version>3.2.0.0-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>    
 <dependency>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-lang3</artifactId>
-    <version>3.7</version>
+    <version>${commons-lang.version}</version>
 </dependency>    
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>${commons-io.version}</version>
+    </dependency>
     <!-- end -->
 
     <!-- Test Dependencies -->
@@ -66,12 +85,7 @@
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.streamsets</groupId>
-      <artifactId>streamsets-datacollector-sdk</artifactId>
-      <version>${streamsets.version}</version>
-      <scope>provided</scope>
-    </dependency>
+
   </dependencies>
 
   <build>
