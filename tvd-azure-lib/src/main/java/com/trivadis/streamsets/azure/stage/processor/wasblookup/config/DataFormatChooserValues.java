@@ -17,9 +17,9 @@ package com.trivadis.streamsets.azure.stage.processor.wasblookup.config;
 
 import com.streamsets.pipeline.api.base.BaseEnumChooserValues;
 
-public class OutputModeChooserValues extends BaseEnumChooserValues<OutputModeType> {
-  public OutputModeChooserValues() {
-    super(OutputModeType.class);
+public class DataFormatChooserValues extends BaseEnumChooserValues<DataFormatType> {
+  public DataFormatChooserValues() {
+    super(DataFormatType.class);
   }
 }
 

@@ -101,9 +101,9 @@ public class AzureWASBLookupProcessorConfig {
 		    type = ConfigDef.Type.STRING,
 		    label = "Object Path",
 		    description = "Path to object that will be looked up",
-				    dependencies = {
+		    dependencies = {
 					    	  @Dependency(configName = "objectPathFromField", triggeredByValues = "false")
-					    },  
+			},  
 		    group = "LOOKUP",
 		    displayPosition = 20
 		  )
@@ -115,11 +115,25 @@ public class AzureWASBLookupProcessorConfig {
 		    required = true,
 		    type = ConfigDef.Type.MODEL,
 		    defaultValue = "AS_RECORDS",
-		    label = "Output Mode",
+		    label = "Output Data Format",
 		    description = "How should the output be produced.",
-		    group = "LOOKUP",
+		    group = "DATA_FORMAT",
 		    displayPosition = 40
 		  )
-		  @ValueChooserModel(OutputModeChooserValues.class)
-  public OutputModeType outputMode = OutputModeType.AS_RECORDS;
+  @ValueChooserModel(DataFormatChooserValues.class)
+  public DataFormatType dataFormat = DataFormatType.AS_RECORDS;
+
+  @ConfigDef(
+		    required = true,
+		    type = ConfigDef.Type.STRING,
+		    defaultValue = "/",
+		    label = "Output Field",
+		    description = "Use an existing field or a new field. Using an existing field overwrites the original value",
+		    dependencies = {
+					    	  @Dependency(configName = "dataFormat", triggeredByValues = {"AS_BLOB", "AS_RECORDS"})
+			},  
+		    group = "DATA_FORMAT",
+		    displayPosition = 50
+		  )
+  public String outputField = "/";
 }

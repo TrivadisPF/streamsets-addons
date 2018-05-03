@@ -15,17 +15,13 @@
  */
 package com.trivadis.streamsets.azure.stage.processor.wasblookup;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringBufferInputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -41,18 +37,19 @@ import com.microsoft.azure.storage.blob.BlobRequestOptions;
 import com.microsoft.azure.storage.blob.CloudBlob;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.streamsets.pipeline.api.Batch;
 import com.streamsets.pipeline.api.Field;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.StageException;
-import com.streamsets.pipeline.api.base.BaseExecutor;
 import com.streamsets.pipeline.api.base.OnRecordErrorException;
 import com.streamsets.pipeline.api.base.SingleLaneRecordProcessor;
 import com.streamsets.pipeline.api.el.ELEval;
-import com.streamsets.pipeline.api.el.ELEvalException;
 import com.streamsets.pipeline.api.el.ELVars;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.AzureWASBLookupProcessorConfig;
-import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.OutputModeType;
+import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.DataFormatType;
+import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.StringFileRef;
+import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.WASBFileRef;
+
+import AmazonS3Util.AzureWASBUtil;
 
 /**
  * This executor is an example and does not actually perform any actions.
@@ -61,7 +58,6 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 
 	private static final Logger LOG = LoggerFactory.getLogger(AzureWASBLookupProcessor.class);
 
-	private CloudStorageAccount storageAccount = null;
 	private CloudBlobClient blobClient = null;
 
 	/**
@@ -85,6 +81,8 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 		String storageConnectionString = "DefaultEndpointsProtocol=https;" + "AccountName="
 				+ getConfig().azureConfig.accountName.get() + ";" + "AccountKey="
 				+ getConfig().azureConfig.accountKey.get();
+		
+		CloudStorageAccount storageAccount = null;
 
 		try {
 			storageAccount = CloudStorageAccount.parse(storageConnectionString);
@@ -97,15 +95,14 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 		}
 		blobClient = storageAccount.createCloudBlobClient();
 
-		ELVars variables = getContext().createELVars();
+		
+//		ELVars variables = getContext().createELVars();
 
 		try {
 			// Calculate working file (the same for all task types)
 			String containerName = (getConfig().containerFromField) ? 
 										record.get(getConfig().fieldWithContainer).getValueAsString() :
 										getConfig().container;				
-System.out.println(record.get(getConfig().fieldWithObjectPath).getValueAsString());
-System.out.println(getConfig().objectPath);
 
 			String objectPath = (getConfig().objectPathFromField) ?
 									record.get(getConfig().fieldWithObjectPath).getValueAsString() :
@@ -119,21 +116,36 @@ System.out.println(getConfig().objectPath);
 			}
 			LOG.debug("Working on {}:{}", containerName, objectPath);
 
-			// download the object into the value field
-			CloudBlob blob = getBlob(containerName, objectPath);
-
-			InputStream input = blob.openInputStream();
+			InputStream input = AzureWASBUtil.getObject(blobClient, containerName, objectPath, true);
 			InputStreamReader inr = new InputStreamReader(input, "UTF-8");
 			String utf8str = IOUtils.toString(inr);
 
-			if (getConfig().outputMode.equals(OutputModeType.AS_RECORDS)) {
+			if (getConfig().dataFormat.equals(DataFormatType.AS_RECORDS)) {
 				for (String line : IOUtils.readLines(new StringReader(utf8str))) {
-					record.set("/value", Field.create(line));
+					record.set(getConfig().outputField, Field.create(line));
 					batchMaker.addRecord(record);
 				}
-			} else {
-				record.set("/value", Field.create(utf8str));
+			} else if (getConfig().dataFormat.equals(DataFormatType.AS_BLOB)) {
+				record.set(getConfig().outputField, Field.create(utf8str));
 				batchMaker.addRecord(record);
+			} else if (getConfig().dataFormat.equals(DataFormatType.AS_WHOLE_FILE)) {
+				HashMap<String, Field> root = new HashMap<>();
+			    root.put("fileRef", Field.create(new WASBFileRef.Builder()
+			    				.storageAccountName(getConfig().azureConfig.accountName)
+			    				.storageAccountAccessKey(getConfig().azureConfig.accountKey)
+			    				.containerName(containerName)
+			    				.objectPath(objectPath)
+			    				.useSSE(true).build()));
+			    		
+			    record.set("/", Field.create(root));
+
+			    HashMap<String, Field> fileInfo = new HashMap<>();
+			    fileInfo.put("size", Field.create(utf8str.length()));
+			    fileInfo.put("filename", Field.create(objectPath));
+			    record.set("/fileInfo", Field.create(fileInfo));
+				batchMaker.addRecord(record);
+			} else {
+				
 			}
 
 		} catch (OnRecordErrorException e) {
@@ -144,7 +156,7 @@ System.out.println(getConfig().objectPath);
 			// Errors.WASB_EXECUTOR_0000, e.toString()));
 		}
 	}
-
+/*
 	private CloudBlob getBlob(String containerName, String objectPath) throws OnRecordErrorException {
 		CloudBlob blob = null;
 		CloudBlobContainer container = null;
@@ -163,6 +175,6 @@ System.out.println(getConfig().objectPath);
 		return blob;
 
 	}
-
+*/
 
 }

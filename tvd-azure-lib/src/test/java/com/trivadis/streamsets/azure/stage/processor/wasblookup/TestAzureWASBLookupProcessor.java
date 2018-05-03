@@ -38,7 +38,7 @@ import com.streamsets.pipeline.sdk.RecordCreator;
 import com.streamsets.pipeline.sdk.StageRunner;
 import com.trivadis.streamsets.azure.stage.lib.wasb.AzureConfig;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.AzureWASBLookupProcessorConfig;
-import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.OutputModeType;
+import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.DataFormatType;
 
 import _ss_com.com.google.common.collect.ImmutableList;
 import _ss_com.streamsets.datacollector.util.Configuration;
@@ -83,6 +83,7 @@ public class TestAzureWASBLookupProcessor {
 		config.fieldWithContainer = "/containerName";
 		config.objectPath = TEST_OBJECT_PATH;
 		config.fieldWithObjectPath = "/objectPath";
+		config.outputField = "/value";
 	
 		return config;
 	}
@@ -104,7 +105,7 @@ public class TestAzureWASBLookupProcessor {
 	public void testAsBlob() throws StageException, IOException {
 		config.containerFromField = false;
 		config.objectPathFromField = true;
-		config.outputMode = OutputModeType.AS_BLOB;
+		config.dataFormat = DataFormatType.AS_BLOB;
 
 		AzureWASBLookupDProcessor processor = new AzureWASBLookupDProcessor();
 		processor.config = config;
@@ -136,7 +137,7 @@ public class TestAzureWASBLookupProcessor {
 	public void testMultipleLines() throws StageException, IOException {
 		config.containerFromField = false;
 		config.objectPathFromField = true;
-		config.outputMode = OutputModeType.AS_RECORDS;
+		config.dataFormat = DataFormatType.AS_RECORDS;
 
 		AzureWASBLookupDProcessor processor = new AzureWASBLookupDProcessor();
 		processor.config = config;
