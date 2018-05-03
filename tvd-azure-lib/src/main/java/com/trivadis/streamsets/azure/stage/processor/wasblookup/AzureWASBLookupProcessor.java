@@ -15,7 +15,6 @@
  */
 package com.trivadis.streamsets.azure.stage.processor.wasblookup;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -31,23 +30,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.OperationContext;
-import com.microsoft.azure.storage.StorageException;
-import com.microsoft.azure.storage.blob.BlobContainerPublicAccessType;
-import com.microsoft.azure.storage.blob.BlobRequestOptions;
-import com.microsoft.azure.storage.blob.CloudBlob;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.streamsets.pipeline.api.Field;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.base.OnRecordErrorException;
 import com.streamsets.pipeline.api.base.SingleLaneRecordProcessor;
 import com.streamsets.pipeline.api.el.ELEval;
-import com.streamsets.pipeline.api.el.ELVars;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.AzureWASBLookupProcessorConfig;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.DataFormatType;
-import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.StringFileRef;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.WASBFileRef;
 import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
@@ -66,12 +57,14 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 	 */
 	public abstract AzureWASBLookupProcessorConfig getConfig();
 
-	// private ErrorRecordHandler errorRecordHandler;
+//	private ErrorRecordHandler errorRecordHandler;
 	private Map<String, ELEval> evals;
 
 	@Override
 	protected List<ConfigIssue> init() {
 		List<ConfigIssue> issues = super.init();
+		
+		//errorRecordHandler = new DefaultErrorRecordHandler(getContext());
 
 		return issues;
 	}
@@ -118,16 +111,20 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 			}
 			LOG.debug("Working on {}:{}", containerName, objectPath);
 
-			InputStream input = AzureWASBUtil.getObject(blobClient, containerName, objectPath, true);
-			InputStreamReader inr = new InputStreamReader(input, "UTF-8");
-			String utf8str = IOUtils.toString(inr);
-
 			if (getConfig().dataFormat.equals(DataFormatType.AS_RECORDS)) {
+				InputStream input = AzureWASBUtil.getObject(blobClient, containerName, objectPath, true);
+				InputStreamReader inr = new InputStreamReader(input, "UTF-8");
+				String utf8str = IOUtils.toString(inr);
+
 				for (String line : IOUtils.readLines(new StringReader(utf8str))) {
 					record.set(getConfig().outputField, Field.create(line));
 					batchMaker.addRecord(record);
 				}
 			} else if (getConfig().dataFormat.equals(DataFormatType.AS_BLOB)) {
+				InputStream input = AzureWASBUtil.getObject(blobClient, containerName, objectPath, true);
+				InputStreamReader inr = new InputStreamReader(input, "UTF-8");
+				String utf8str = IOUtils.toString(inr);
+
 				record.set(getConfig().outputField, Field.create(utf8str));
 				batchMaker.addRecord(record);
 			} else if (getConfig().dataFormat.equals(DataFormatType.AS_WHOLE_FILE)) {
@@ -142,7 +139,7 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 			    record.set("/", Field.create(root));
 
 			    HashMap<String, Field> fileInfo = new HashMap<>();
-			    fileInfo.put("size", Field.create(utf8str.length()));
+//			    fileInfo.put("size", Field.create(utf8str.length()));
 			    fileInfo.put("filename", Field.create(objectPath));
 			    record.set("/fileInfo", Field.create(fileInfo));
 				batchMaker.addRecord(record);
@@ -151,11 +148,10 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 			}
 
 		} catch (OnRecordErrorException e) {
-			// errorRecordHandler.onError(e);
+			throw new RuntimeException(e);
 		} catch (Exception e) {
 			LOG.error("Can't execute WASB operation", e);
-			// errorRecordHandler.onError(new OnRecordErrorException(record,
-			// Errors.WASB_EXECUTOR_0000, e.toString()));
+			throw new RuntimeException(e);
 		}
 	}
 /*

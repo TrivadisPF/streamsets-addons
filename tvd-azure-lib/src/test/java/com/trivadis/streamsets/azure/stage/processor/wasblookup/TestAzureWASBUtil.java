@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
@@ -21,7 +22,8 @@ import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
 public class TestAzureWASBUtil {
 	private final static String TEST_CONTAINER = "raw-data";
-	private final static String TEST_OBJECT_PATH = "orsted/2018-04-20-21/ROW01_N02_01B0B628_RB_20Hz_20161010_110212-11.txt.ready";
+	private final static String TEST_OBJECT_PATH = "orsted/2018-05-03-15/ROW01_N02_01B0B628_RB_20Hz_20161010_110212_small21.txt.ready";
+	//private final static String TEST_OBJECT_PATH = "orsted/2018-04-20-21/ROW01_N02_01B0B628_RB_20Hz_20161010_110212-11.txt.ready";
 	private final static CredentialValue STORAGE_ACCOUNT_NAME = new CredentialValue() {
 		@Override
 		public String get() throws StageException {
@@ -65,7 +67,7 @@ public class TestAzureWASBUtil {
 		String utf8str = IOUtils.toString(inr);
 
 		assertNotNull(utf8str);
-		assertEquals(10893476, utf8str.length(), 10893476);
+		assertEquals(19728, utf8str.length());
 	}
 
 	@Test
@@ -75,6 +77,13 @@ public class TestAzureWASBUtil {
 		String utf8str = IOUtils.toString(inr);
 
 		assertNotNull(utf8str);
-		assertEquals(10893476, utf8str.length(), 10893476);
+		assertEquals(19728, utf8str.length());
 	}
+	
+	@Test
+	public void testGetMetadata() throws IOException {
+		Map<String, String> metadata = AzureWASBUtil.getMetaData(blobClient, TEST_CONTAINER, "/" + TEST_OBJECT_PATH, true);
+		System.out.println(metadata);
+	}
+
 }
