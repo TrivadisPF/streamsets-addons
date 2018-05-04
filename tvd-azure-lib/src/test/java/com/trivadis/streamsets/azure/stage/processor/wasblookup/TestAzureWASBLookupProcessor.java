@@ -15,7 +15,8 @@
  */
 package com.trivadis.streamsets.azure.stage.processor.wasblookup;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,6 @@ import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.DataForma
 
 import _ss_com.com.google.common.collect.ImmutableList;
 import _ss_com.streamsets.datacollector.util.Configuration;
-import _ss_org.apache.commons.io.IOUtils;
 
 public class TestAzureWASBLookupProcessor {
 	private final static String TEST_CONTAINER = "raw-data";

@@ -18,8 +18,6 @@ package com.trivadis.streamsets.azure.stage.processor.wasblookup;
 import com.streamsets.pipeline.api.ConfigDefBean;
 import com.streamsets.pipeline.api.ConfigGroups;
 import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.HideConfigs;
-import com.streamsets.pipeline.api.PipelineLifecycleStage;
 import com.streamsets.pipeline.api.StageDef;
 import com.trivadis.streamsets.azure.stage.processor.wasblookup.config.AzureWASBLookupProcessorConfig;
 

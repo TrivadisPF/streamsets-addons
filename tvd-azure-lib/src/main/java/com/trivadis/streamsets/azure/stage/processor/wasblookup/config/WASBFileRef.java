@@ -1,10 +1,8 @@
 package com.trivadis.streamsets.azure.stage.processor.wasblookup.config;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.Set;

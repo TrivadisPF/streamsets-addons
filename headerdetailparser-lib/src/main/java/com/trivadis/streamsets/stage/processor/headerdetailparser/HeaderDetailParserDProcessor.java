@@ -27,6 +27,8 @@ import com.streamsets.pipeline.api.StageDef;
 import com.streamsets.pipeline.api.ValueChooserModel;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatChooserValues;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderChooserValue;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderType;
 
 
 @StageDef(version = 1, 
@@ -81,13 +83,35 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 			defaultValue = "/",
 			label = "Output Field",
 			description="Output field into which the unstructured text will be parsed. Use empty value to write directly to root of the record.",
+			dependsOn = "keepOriginalFields",
+			triggeredByValue = "true",
 			displayPosition = 30,
-			group = "PARSER",
-		    dependsOn = "keepOriginalFields",
-		    triggeredByValue = "true"
+			group = "PARSER"
 			)
 	public String outputField;
 
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.STRING,
+		      defaultValue = "detail",
+		      label = "Detail Line Field",
+		      description="Output field into which the detail line will parsed.",
+		      displayPosition = 60,
+		      group = "PARSER"
+		  )
+	public String detailLineField;	 
+
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.BOOLEAN,
+		      defaultValue = "false",
+		      label = "Split Details?",
+		      description="Should the detail line be split or returned as is.",
+		      displayPosition = 70,
+		      group = "PARSER"
+		  )
+	public boolean splitDetails = false;	
+	
 	@ConfigDef(
 		      required = false,
 		      type = ConfigDef.Type.MODEL,
@@ -95,7 +119,7 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 		      label = "Header Extractors",
 		      description="A regular expression which extracts key as group 1 and value as group 2",
 		      displayPosition = 40,
-		      group = "PARSER"
+		      group = "HEADERPARSER"
 		  )
 	@ListBeanModel
 	public List<HeaderExtractorConfig> headerExtractorConfigs;
@@ -107,7 +131,7 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 		      label = "Header/Detail Separator",
 		      description="A regular expression which identifiey a given line as a spearator line between the headers and the detail lines",
 		      displayPosition = 45,
-		      group = "PARSER"
+		      group = "HEADERPARSER"
 		  )
 	public String headerDetailSeparator;	 
 
@@ -118,35 +142,56 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 		      label = "Number of Header Lines",
 		      description="The number of header lines to remove",
 		      displayPosition = 50,
-		      group = "PARSER"
+		      group = "HEADERPARSER"
 		  )
 
 	public Integer nofHeaderLines;
+	 
+
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.MODEL,
+		      defaultValue = "NO_HEADER",
+		      label = "Header Line",
+		      description="Is there a Header for the detail lines and should it be used.",
+		      dependsOn = "splitDetails",
+		      triggeredByValue = "true",
+		      displayPosition = 75,
+		      group = "DETAILPARSER"
+		  )
+	@ValueChooserModel(HeaderChooserValue.class)	
+	public HeaderType headerType;	 
+	
 	
 	@ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.STRING,
-		      defaultValue = "detail",
-		      label = "Detail Line Field",
-		      description="Output field into which the detail line will parsed.",
-		      displayPosition = 60,
-		      group = "PARSER"
-		  )
-	public String detailLineField;	 
-/*
+	      required = true,
+	      type = ConfigDef.Type.STRING,
+	      defaultValue = " ",
+	      label = "Separator",
+	      description = "Regular expression to use for splitting the field. If trying to split on a RegEx meta" +
+	          " character \".$|()[{^?*+\\\", the character must be escaped with \\",
+	      dependsOn = "splitDetails",
+	      triggeredByValue = "true",
+	      displayPosition = 80,
+	      group = "DETAILPARSER"
+	  )
+	public String separator;
+	
 	@ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.STRING,
-		      defaultValue = "detail",
-		      label = "Detail Line Field",
-		      description="Output field into which the detail line will parsed.",
-		      displayPosition = 60,
-		      group = "PARSER"
-		  )
-	public boolean split;	 
-*/	
-
-
+	      required = false,
+	      type = ConfigDef.Type.LIST,
+	      defaultValue = "[\"/fieldSplit1\", \"/fieldSplit2\"]",
+	      label = "New Split Fields",
+	      description="New fields to pass split data. The last field includes any remaining unsplit data.",
+	  	  dependencies = {
+		  		@Dependency(configName = "splitDetails", triggeredByValues = {"true"}),
+	  			@Dependency(configName = "headerType", triggeredByValues = {"NO_HEADER", "IGNORE_HEADER"})
+		  },  
+	      displayPosition = 90,
+	      group = "DETAILPARSER"
+	  )
+	public List<String> fieldPathsForSplits;	
+	
 	@Override
 	public String getFieldPathToParse() {
 		return fieldPathToParse;
@@ -162,6 +207,12 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 		return outputField;
 	}
 
+	@Override
+	public boolean getSplitDetails() {
+		return splitDetails;
+	}
+
+	
 	@Override
 	public List<HeaderExtractorConfig> getHeaderExtractorConfigs() {
 		return headerExtractorConfigs;
@@ -186,4 +237,20 @@ public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 	public DataFormatType getDataFormat() {
 		return dataFormat;
 	}
+	
+	@Override
+	public String getSeparator() {
+		return separator;
+	}
+	
+	@Override
+	public HeaderType getHeaderType() {
+		return headerType;
+	}
+
+	@Override
+	public List<String> getFieldPathsForSplits() {
+		return fieldPathsForSplits;
+	}
+
 }
