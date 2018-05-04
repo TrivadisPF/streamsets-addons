@@ -1,7 +1,9 @@
 package com.trivadis.streamsets.azure.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,24 +18,43 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer;
 
 public class AzureWASBUtil {
 
-	public static InputStream getObject(CloudBlobClient blobClient, String containerName, String objectPath, boolean useSSE) {
+	public static InputStream getObject(CloudBlobClient blobClient, String containerName, String objectPath, boolean useSSE) throws IOException {
 		InputStream is = null;
 		CloudBlobContainer container = null;
 		CloudBlob blob = null;
-		
+
 		try {
 			container = blobClient.getContainerReference(containerName);
 			container.createIfNotExists(BlobContainerPublicAccessType.CONTAINER, new BlobRequestOptions(),
 					new OperationContext());
 			blob = container.getBlockBlobReference(StringUtils.removeStart(objectPath, "/"));
 			is = blob.openInputStream();
-		} catch (URISyntaxException | StorageException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (StorageException e) {
+			throw new IOException(e);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
 		}
-
 		return is;
 		
+	}
+	
+	public static Map<String,String> getMetaData(CloudBlobClient blobClient, String containerName, String objectPath, boolean useSSE) throws IOException {
+		Map<String, String> metadata = null;
+		CloudBlobContainer container = null;
+		CloudBlob blob = null;
+
+		try {
+			container = blobClient.getContainerReference(containerName);
+			container.createIfNotExists(BlobContainerPublicAccessType.CONTAINER, new BlobRequestOptions(),
+					new OperationContext());
+			blob = container.getBlockBlobReference(StringUtils.removeStart(objectPath, "/"));
+			metadata = blob.getMetadata();
+		} catch (StorageException e) {
+			throw new IOException(e);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		return metadata;
 	}
 	
 }
