@@ -35,7 +35,7 @@ public class HeaderExtractorConfig {
 		      defaultValue = "",
 		      label = "Regular Expression",
 		      description="A regular expression which extracts key as group 1 and value as group 2",
-		      displayPosition = 30,
+		      displayPosition = 30,	      
 		      group = "PARSER"
 		  )
  

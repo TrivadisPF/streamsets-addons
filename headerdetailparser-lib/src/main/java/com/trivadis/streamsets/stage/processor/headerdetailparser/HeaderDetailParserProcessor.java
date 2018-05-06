@@ -29,47 +29,42 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.streamsets.pipeline.api.BatchMaker;
 import com.streamsets.pipeline.api.Field;
 import com.streamsets.pipeline.api.FileRef;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.base.OnRecordErrorException;
-import com.streamsets.pipeline.api.base.SingleLaneRecordProcessor;
+import com.streamsets.pipeline.api.base.RecordProcessor;
 import com.trivadis.streamsets.stage.lib.headerdetailparser.Errors;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderType;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserDetailsConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserHeaderConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DetailsColumnHeaderType;
 
-import _ss_org.apache.commons.lang3.StringUtils;
 
-
-public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProcessor {
+public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 	private static final Logger LOG = LoggerFactory.getLogger(HeaderDetailParserProcessor.class);
 	
 	/**
 	 * Gives access to the UI configuration of the stage provided by the
 	 * {@link SampleDProcessor} class.
 	 */
-	public abstract String getFieldPathToParse();
-	public abstract boolean isKeepOriginalFields();
-	public abstract String getOutputField();
-	public abstract String getDetailLineField();
-	public abstract boolean getSplitDetails();
-	public abstract List<HeaderExtractorConfig> getHeaderExtractorConfigs();
-	public abstract String getHeaderDetailSeparator();
-	public abstract Integer getNofHeaderLines();
-	public abstract DataFormatType getDataFormat();
-	public abstract String getSeparator();
-	public abstract HeaderType getHeaderType();
-	public abstract List<String> getFieldPathsForSplits();
-
+	public abstract HeaderDetailParserConfig getParserConfig();
+	public abstract HeaderDetailParserHeaderConfig getHeaderConfig();
+	public abstract HeaderDetailParserDetailsConfig getDetailsConfig();
+		
 	// map of compiled regex, keyed by regex value
 	private Map<String, Pattern> patterns = new HashMap<>();
 	 
 	private String[] fieldPaths;
+	
+	private String headerLane;
+	private String headerAndDetailLane;
 	
 	private static Pattern getPattern(Map<String, Pattern> patterns, String regEx) {
 		if (patterns != null && patterns.containsKey(regEx)) {
@@ -88,26 +83,31 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 		List<ConfigIssue> issues = super.init();
 		
 		// compile all patterns
-		for (HeaderExtractorConfig headerExtractorConfig : getHeaderExtractorConfigs()) {
-			patterns.put(headerExtractorConfig.regex, Pattern.compile(headerExtractorConfig.regex));
+		if (getHeaderConfig() != null && getHeaderConfig().headerExtractorConfigs != null) {
+			for (HeaderExtractorConfig headerExtractorConfig : getHeaderConfig().headerExtractorConfigs) {
+				patterns.put(headerExtractorConfig.regex, Pattern.compile(headerExtractorConfig.regex));
+			}
 		}
 	    if (issues.isEmpty()) {
-	    	if (getFieldPathsForSplits() != null) {
-	    		fieldPaths = getFieldPathsForSplits().toArray(new String[getFieldPathsForSplits().size()]);
+	    	if (getDetailsConfig().fieldPathsForSplits != null) {
+	    		fieldPaths = getDetailsConfig().fieldPathsForSplits.toArray(new String[getDetailsConfig().fieldPathsForSplits.size()]);
 	    	}
 //	        removeUnsplitValue = originalFieldAction == OriginalFieldAction.REMOVE;
 	    }
+	    
+	    headerLane = getContext().getOutputLanes().get(0);
+	    headerAndDetailLane = getContext().getOutputLanes().get(1);
 
 		return issues;
 	}
 
 	/** {@inheritDoc} */
 	@Override
-	protected void process(Record record, SingleLaneBatchMaker batchMaker) throws StageException {
+	protected void process(Record record, BatchMaker batchMaker) throws StageException {
 
 		//record.getHeader().getSourceId()
 		
-	    if (isKeepOriginalFields() && !record.get().getType().isOneOf(Field.Type.MAP, Field.Type.LIST_MAP)) {
+	    if (getParserConfig().keepOriginalFields && !record.get().getType().isOneOf(Field.Type.MAP, Field.Type.LIST_MAP)) {
 	        String errorValue;
 	        if (record.get().getType() == Field.Type.LIST) {
 	          errorValue = record.get().getValueAsList().toString();
@@ -121,13 +121,13 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 	
 	    Field original = null;
 	    InputStream is = null;
-	    if (getDataFormat().equals(DataFormatType.AS_BLOB)) {
-			original = record.get(getFieldPathToParse());
+	    if (getParserConfig().inputDataFormat.equals(DataFormatType.AS_BLOB)) {
+			original = record.get(getParserConfig().fieldPathToParse);
 			
 			is = IOUtils.toInputStream(original.getValueAsString(), Charset.forName("UTF-8"));
 	        processOriginal(is, record, batchMaker);
 			
-	    } else if (getDataFormat().equals(DataFormatType.AS_WHOLE_FILE)) {
+	    } else if (getParserConfig().inputDataFormat.equals(DataFormatType.AS_WHOLE_FILE)) {
 //	    	String fileName = record.get("/fileInfo/filename").getValueAsString();
 	    	FileRef fileRef = record.get("/fileRef").getValueAsFileRef();
 		    
@@ -147,18 +147,18 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 
 	}
 	
-	private void processOriginal(InputStream is, Record orinalRecord, SingleLaneBatchMaker batchMaker) throws StageException {
+	private void processOriginal(InputStream is, Record orinalRecord, BatchMaker batchMaker) throws StageException {
 		List<String> headers = new ArrayList<>();
 		String detailHeader = null;
         Record record = null;
         String line = null;
        
         Pattern headerDetailSeparatorRegex = null; 
-        if (getHeaderDetailSeparator() != null && getHeaderDetailSeparator().length() > 0) {
-        	headerDetailSeparatorRegex = Pattern.compile(getHeaderDetailSeparator());   
+        if (getHeaderConfig().headerDetailSeparator != null && getHeaderConfig().headerDetailSeparator.length() > 0) {
+        	headerDetailSeparatorRegex = Pattern.compile(getHeaderConfig().headerDetailSeparator);   
         }
         
-        if (isKeepOriginalFields()) {
+        if (getParserConfig().keepOriginalFields) {
         	record = getContext().cloneRecord(orinalRecord);
         } else {
         	record = getContext().createRecord(orinalRecord);
@@ -184,14 +184,14 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 		boolean withinHeader = true;
 		boolean parseDetailHeader = true;
 
-		int i = 0;
+		int i = 1;
 		while (scan.hasNextLine()) {
 			line = scan.nextLine();
 
 			if (withinHeader) {
 				if (headerDetailSeparatorRegex != null && headerDetailSeparatorRegex.matcher(line).find()) {
 					withinHeader = false;
-				} else if (getNofHeaderLines() != null && i >= getNofHeaderLines()) {
+				} else if (getHeaderConfig().nofHeaderLines != null && i >= getHeaderConfig().nofHeaderLines) {
 					withinHeader = false;
 				} else {
 					headers.add(line);
@@ -199,7 +199,7 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 			} else {
 				System.out.println("Number of header lines: " + headers.size());
 				
-				if (parseDetailHeader) {
+				if (!getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.NO_HEADER) && parseDetailHeader) {
 					detailHeader = line;
 					parseDetailHeader = false;
 					System.out.println("detail header: " + line);
@@ -210,12 +210,12 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 			i++;
 		}
 		
-		if (i==0) {
+		if (i==1) {
 			throw new OnRecordErrorException(Errors.HEADERDETAILP_03, record.getHeader().getSourceId());
 		}
 		
 		if (headers.size() > 0) {
-			for (HeaderExtractorConfig headerExtractorConfig : getHeaderExtractorConfigs()) {
+			for (HeaderExtractorConfig headerExtractorConfig : getHeaderConfig().headerExtractorConfigs) {
 	
 				String header = headers.get(headerExtractorConfig.lineNumber-1);
 				System.out.println("header: " + header);
@@ -236,11 +236,12 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 					LOG.info("no matcher found: " + matcher);
 				}
 			}
+			batchMaker.addRecord(record, headerLane);
 		}
 		
 		while (line != null && line.length() > 0) {
 			processDetail(record, line, detailHeader);
-			batchMaker.addRecord(record);
+			batchMaker.addRecord(record, headerAndDetailLane);
 
 			line = (scan.hasNextLine()) ? scan.nextLine() : null;
 		}
@@ -254,18 +255,18 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 			throw new OnRecordErrorException(Errors.HEADERDETAILP_05, record.getHeader().getSourceId());			
 		}
 		
-		if (getSplitDetails()) {
+		if (getParserConfig().splitDetails) {
 			String[] splits = null;
 			String[] headers = fieldPaths;
 			LinkedHashMap<String, Field> listMap = new LinkedHashMap<>();
 			
-			if (getHeaderType().equals(HeaderType.USE_HEADER)) {
-				headers = detailHeader.split(getSeparator());
+			if (getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.USE_HEADER)) {
+				headers = detailHeader.split(getDetailsConfig().separator);
 				for (int i = 0; i < headers.length; i++) {
 					headers[i] = "/" + headers[i];
 				}
 			}
-	        splits = line.split(getSeparator());
+	        splits = line.split(getDetailsConfig().separator);
 			
 	        /*
 			switch (tooManySplitsAction) {
@@ -307,8 +308,8 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 	        }	        
 	        */
 	        
-	        if (getDetailLineField() != null && getDetailLineField().length() > 0 && !getDetailLineField().equals("/")) {
-	        	record.set(getDetailLineField(),  Field.createListMap(listMap));
+	        if (getParserConfig().detailLineField != null && getParserConfig().detailLineField.length() > 0 && !getParserConfig().detailLineField.equals("/")) {
+	        	record.set(getParserConfig().detailLineField,  Field.createListMap(listMap));
 	        } else {
 	        	for (String name : listMap.keySet()) {
 	        		record.set(name, listMap.get(name));
@@ -316,7 +317,7 @@ public abstract class HeaderDetailParserProcessor extends SingleLaneRecordProces
 	        }
 		} else {
 			field = Field.create(line);
-			record.set(getDetailLineField(), field);
+			record.set(getParserConfig().detailLineField, field);
 		}
 		return field;
 	}

@@ -17,240 +17,52 @@ package com.trivadis.streamsets.stage.processor.headerdetailparser;
 
 import java.util.List;
 
-import com.streamsets.pipeline.api.ConfigDef;
+import com.streamsets.pipeline.api.ConfigDefBean;
 import com.streamsets.pipeline.api.ConfigGroups;
-import com.streamsets.pipeline.api.Dependency;
-import com.streamsets.pipeline.api.FieldSelectorModel;
 import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.ListBeanModel;
 import com.streamsets.pipeline.api.StageDef;
-import com.streamsets.pipeline.api.ValueChooserModel;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatChooserValues;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderChooserValue;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderType;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserDetailsConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserHeaderConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserOutputStreams;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DetailsColumnHeaderType;
 
 
 @StageDef(version = 1, 
 			label = "Header/Detail Parser Processor", 
 			description = "", 
 			icon = "headerdetailparser.png", 
+			outputStreams = HeaderDetailParserOutputStreams.class,
+//			producesEvents = true,
 			onlineHelpRefUrl = "")
 @ConfigGroups(Groups.class)
 @GenerateResourceBundle
 public class HeaderDetailParserDProcessor extends HeaderDetailParserProcessor {
 
-	@ConfigDef(
-		    required = true,
-		    type = ConfigDef.Type.MODEL,
-		    defaultValue = "AS_RECORDS",
-		    label = "Input Data Format",
-		    description = "How should the output be produced.",
-		    group = "PARSER",
-		    displayPosition = 0
-		  )
-	@ValueChooserModel(DataFormatChooserValues.class)
-	public DataFormatType dataFormat = DataFormatType.AS_RECORDS;
-	
-	@ConfigDef(required = true, 
-			type = ConfigDef.Type.MODEL, 
-			defaultValue = "", 
-			label = "Field to Parse", 
-			description = "The field containing the semi-structured text data to be parsed by the Utah-Parser", 
-			dependencies = {
-					@Dependency(configName = "dataFormat", triggeredByValues = {"AS_RECORDS", "AS_BLOB"})
-			},  
-			displayPosition = 10, 
-			group = "PARSER")
-	@FieldSelectorModel(singleValued = true)
-	public String fieldPathToParse;
-	
-	  @ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.BOOLEAN,
-		      defaultValue = "true",
-		      label = "Keep Original Fields",
-		      description = "Whether the original fields should be kept. " +
-		          "If this is set, the root field of the record must be a Map or List Map.",
-		      displayPosition = 20,
-		      group = "PARSER"
-		  )
-	public boolean keepOriginalFields;
-	
-	@ConfigDef(
-			required = true,
-			type = ConfigDef.Type.STRING,
-			defaultValue = "/",
-			label = "Output Field",
-			description="Output field into which the unstructured text will be parsed. Use empty value to write directly to root of the record.",
-			dependsOn = "keepOriginalFields",
-			triggeredByValue = "true",
-			displayPosition = 30,
-			group = "PARSER"
-			)
-	public String outputField;
+	@ConfigDefBean()
+	public HeaderDetailParserConfig parserConfig;
 
-	@ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.STRING,
-		      defaultValue = "detail",
-		      label = "Detail Line Field",
-		      description="Output field into which the detail line will parsed.",
-		      displayPosition = 60,
-		      group = "PARSER"
-		  )
-	public String detailLineField;	 
+	@ConfigDefBean()
+	public HeaderDetailParserHeaderConfig headerConfig;
 
-	@ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.BOOLEAN,
-		      defaultValue = "false",
-		      label = "Split Details?",
-		      description="Should the detail line be split or returned as is.",
-		      displayPosition = 70,
-		      group = "PARSER"
-		  )
-	public boolean splitDetails = false;	
-	
-	@ConfigDef(
-		      required = false,
-		      type = ConfigDef.Type.MODEL,
-		      defaultValue = "",
-		      label = "Header Extractors",
-		      description="A regular expression which extracts key as group 1 and value as group 2",
-		      displayPosition = 40,
-		      group = "HEADERPARSER"
-		  )
-	@ListBeanModel
-	public List<HeaderExtractorConfig> headerExtractorConfigs;
-	
-	@ConfigDef(
-		      required = false,
-		      type = ConfigDef.Type.STRING,
-		      defaultValue = "",
-		      label = "Header/Detail Separator",
-		      description="A regular expression which identifiey a given line as a spearator line between the headers and the detail lines",
-		      displayPosition = 45,
-		      group = "HEADERPARSER"
-		  )
-	public String headerDetailSeparator;	 
+	@ConfigDefBean()
+	public HeaderDetailParserDetailsConfig detailsConfig;
 
-	@ConfigDef(
-		      required = false,
-		      type = ConfigDef.Type.NUMBER,
-		      defaultValue = "",
-		      label = "Number of Header Lines",
-		      description="The number of header lines to remove",
-		      displayPosition = 50,
-		      group = "HEADERPARSER"
-		  )
-
-	public Integer nofHeaderLines;
-	 
-
-	@ConfigDef(
-		      required = true,
-		      type = ConfigDef.Type.MODEL,
-		      defaultValue = "NO_HEADER",
-		      label = "Header Line",
-		      description="Is there a Header for the detail lines and should it be used.",
-		      dependsOn = "splitDetails",
-		      triggeredByValue = "true",
-		      displayPosition = 75,
-		      group = "DETAILPARSER"
-		  )
-	@ValueChooserModel(HeaderChooserValue.class)	
-	public HeaderType headerType;	 
-	
-	
-	@ConfigDef(
-	      required = true,
-	      type = ConfigDef.Type.STRING,
-	      defaultValue = " ",
-	      label = "Separator",
-	      description = "Regular expression to use for splitting the field. If trying to split on a RegEx meta" +
-	          " character \".$|()[{^?*+\\\", the character must be escaped with \\",
-	      dependsOn = "splitDetails",
-	      triggeredByValue = "true",
-	      displayPosition = 80,
-	      group = "DETAILPARSER"
-	  )
-	public String separator;
-	
-	@ConfigDef(
-	      required = false,
-	      type = ConfigDef.Type.LIST,
-	      defaultValue = "[\"/fieldSplit1\", \"/fieldSplit2\"]",
-	      label = "New Split Fields",
-	      description="New fields to pass split data. The last field includes any remaining unsplit data.",
-	  	  dependencies = {
-		  		@Dependency(configName = "splitDetails", triggeredByValues = {"true"}),
-	  			@Dependency(configName = "headerType", triggeredByValues = {"NO_HEADER", "IGNORE_HEADER"})
-		  },  
-	      displayPosition = 90,
-	      group = "DETAILPARSER"
-	  )
-	public List<String> fieldPathsForSplits;	
-	
 	@Override
-	public String getFieldPathToParse() {
-		return fieldPathToParse;
-	}
-	
-	@Override
-	public boolean isKeepOriginalFields() {
-		return keepOriginalFields;
+	public HeaderDetailParserConfig getParserConfig() {
+		return parserConfig;
 	}
 
 	@Override
-	public String getOutputField() {
-		return outputField;
+	public HeaderDetailParserHeaderConfig getHeaderConfig() {
+		return headerConfig;
 	}
 
 	@Override
-	public boolean getSplitDetails() {
-		return splitDetails;
+	public HeaderDetailParserDetailsConfig getDetailsConfig() {
+		return detailsConfig;
 	}
 
-	
-	@Override
-	public List<HeaderExtractorConfig> getHeaderExtractorConfigs() {
-		return headerExtractorConfigs;
-	}
-
-	@Override
-	public String getHeaderDetailSeparator() {
-		return headerDetailSeparator;
-	}
-
-	@Override
-	public Integer getNofHeaderLines() {
-		return nofHeaderLines;
-	}
-
-	@Override
-	public String getDetailLineField() {
-		return detailLineField;
-	}
-	
-	@Override
-	public DataFormatType getDataFormat() {
-		return dataFormat;
-	}
-	
-	@Override
-	public String getSeparator() {
-		return separator;
-	}
-	
-	@Override
-	public HeaderType getHeaderType() {
-		return headerType;
-	}
-
-	@Override
-	public List<String> getFieldPathsForSplits() {
-		return fieldPathsForSplits;
-	}
 
 }

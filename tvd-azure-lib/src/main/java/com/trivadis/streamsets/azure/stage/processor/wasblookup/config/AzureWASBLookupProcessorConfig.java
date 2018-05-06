@@ -31,9 +31,7 @@ public class AzureWASBLookupProcessorConfig {
 
   @ConfigDefBean(groups = "WASB")
   public AzureConfig azureConfig;
-  
-
-    
+      
   @ConfigDef(
 		    required = true,
 		    type = ConfigDef.Type.BOOLEAN,

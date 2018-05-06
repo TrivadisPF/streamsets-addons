@@ -17,8 +17,8 @@ package com.trivadis.streamsets.stage.processor.headerdetailparser.config;
 
 import com.streamsets.pipeline.api.base.BaseEnumChooserValues;
 
-public class DataFormatChooserValues extends BaseEnumChooserValues<DataFormatType> {
-  public DataFormatChooserValues() {
+public class InputDataFormatChooserValues extends BaseEnumChooserValues<DataFormatType> {
+  public InputDataFormatChooserValues() {
     super(DataFormatType.class);
   }
 }
