@@ -42,6 +42,8 @@ import com.trivadis.streamsets.stage.processor.headerdetailparser.config.Details
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserDetailsConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserHeaderConfig;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.OnStagePreConditionFailure;
+import com.trivadis.streamsets.stage.processor.headerdetailparser.config.TooManySplitsAction;
 
 import _ss_com.com.google.common.collect.ImmutableList;
 import _ss_com.streamsets.datacollector.util.Configuration;
@@ -68,7 +70,20 @@ public class TestHeaderDetailParserProcessor {
 		config.splitDetails = false;
 		return config;
 	}
+	
+	private HeaderDetailParserHeaderConfig getHeaderParserConfig() {
+		HeaderDetailParserHeaderConfig config = new HeaderDetailParserHeaderConfig();
+		return config;
+	}
 
+	private HeaderDetailParserDetailsConfig getDetailsParserConfig() {
+		HeaderDetailParserDetailsConfig config = new HeaderDetailParserDetailsConfig();
+		config.fieldPathsForSplits = null;
+		config.separator = ",";
+		config.onStagePreConditionFailure = OnStagePreConditionFailure.TO_ERROR;
+		config.tooManySplitsAction = TooManySplitsAction.TO_LAST_FIELD;
+		return config;
+	}
 
 	private Record createRecordWithValueAndTemplate(String value) {
 		Record record = RecordCreator.create();
@@ -122,13 +137,13 @@ public class TestHeaderDetailParserProcessor {
 
 		processor = new HeaderDetailParserDProcessor();
 		processor.parserConfig = getBaseParserConfig();
-		processor.headerConfig = new HeaderDetailParserHeaderConfig();
-		processor.detailsConfig = new HeaderDetailParserDetailsConfig();
+		processor.headerConfig =  getHeaderParserConfig();
+		processor.detailsConfig =  getDetailsParserConfig();
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testHeaderAndDetailAsOne_headerSplitOnRegex() throws StageException, IOException {
+	public void test_headerSplitOnRegex() throws StageException, IOException {
 
 		// prepare parser config
 
@@ -169,7 +184,7 @@ public class TestHeaderDetailParserProcessor {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testHeaderAndDetailAsOne_headerSplitOnNofLines() throws StageException, IOException {
+	public void test_headerSplitOnNofLines() throws StageException, IOException {
 
 		// prepare parser config
 
@@ -205,7 +220,7 @@ public class TestHeaderDetailParserProcessor {
 	
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testHeaderAndDetailAsOne_headerSplitOnNofLinesZERO() throws StageException, IOException {
+	public void test_headerSplitOnNofLinesZERO() throws StageException, IOException {
 
 		// prepare parser config
 
@@ -213,7 +228,7 @@ public class TestHeaderDetailParserProcessor {
 		processor.headerConfig = getHeaderConfig("^-----", 0);
 
 		// prepare details config
-		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.IGNORE_HEADER;
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
 		
 		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
 				.setExecutionMode(ExecutionMode.STANDALONE)
@@ -241,7 +256,7 @@ public class TestHeaderDetailParserProcessor {
 	
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testHeaderAndDetailAsOne_headerSplitOnNofLines_NoDetailColHeader() throws StageException, IOException {
+	public void test_headerSplitOnNofLines_NoDetailColHeader() throws StageException, IOException {
 
 		// prepare parser config
 
@@ -277,7 +292,49 @@ public class TestHeaderDetailParserProcessor {
 	
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testEmptyFile() throws StageException, IOException {
+	public void test_headerSplitOnNofLines_splitDetailsUsingColHeader() throws StageException, IOException {
+
+		// prepare parser config
+		processor.parserConfig.splitDetails = true;
+		processor.parserConfig.detailLineField = "/detail";
+
+		// prepare header config
+		processor.headerConfig = getHeaderConfig(null, NOF_HEADER_LINES);
+
+		// prepare details config
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
+		
+		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
+				.setExecutionMode(ExecutionMode.STANDALONE)
+				.setResourcesDir("/tmp")
+				.addOutputLane("header").addOutputLane("headerDetails")
+				.build();
+		runner.runInit();
+
+		// run the test
+		List<Record> headerDetails = null;
+		try {
+			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER);
+			StageRunner.Output output = runner.runProcess(input);
+
+			headerDetails = output.getRecords().get("headerDetails");
+
+		} finally {
+			runner.runDestroy();
+		}
+
+		// assert
+		assertEquals(16, headerDetails.size());
+		assertEquals("ROW01", headerDetails.get(0).get("/Location").getValueAsString());
+		assertEquals("ROW01", headerDetails.get(0).get("/Position").getValueAsString());
+		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
+		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
+		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/SGHalf47").getValueAsString());
+	}	
+	
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_emptyFile() throws StageException, IOException {
 
 		// prepare parser config
 
@@ -301,121 +358,12 @@ public class TestHeaderDetailParserProcessor {
 			StageRunner.Output output = runner.runProcess(input);
 
 			op = output.getRecords().get("headerDetails");
-	//		fail("An error was expected");
+			fail("An error was expected");
 		} catch (Exception e) {
 			// expected
 		} finally {
 			runner.runDestroy();
 		}
-
 	}
 
-	
-	@Test
-	@SuppressWarnings("unchecked")
-	public void testLineSplit() throws StageException, IOException {
-		InputStream stream = null;
-
-		stream = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream("ROW01_N02_01B0B628_RB_20Hz_20161010_110212_small.txt");
-		String value = IOUtils.toString(stream);
-
-		File dir = new File("target", UUID.randomUUID().toString());
-		dir.mkdirs();
-		Configuration.setFileRefsBaseDir(dir);
-
-		// UtahParserDProcessor processor = new UtahParserDProcessor();
-
-		List<HeaderExtractorConfig> headerExtractorConfigs = new ArrayList<>();
-		HeaderExtractorConfig config = new HeaderExtractorConfig();
-		config.key = null;
-		config.lineNumber = 3;
-
-		config.regex = "(\\w*)[:=, ]*(\"[^\"]*\"|[^\\s]*)";
-		headerExtractorConfigs.add(config);
-
-		ProcessorRunner runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, null)
-				.addConfiguration("fieldPathToParse", "/value").addConfiguration("dataFormat", DataFormatType.AS_BLOB)
-				.addConfiguration("keepOriginalFields", false)
-				.addConfiguration("headerExtractorConfigs", headerExtractorConfigs)
-				.addConfiguration("headerDetailSeparator", "^-----")
-				// .addConfiguration("nofHeaderLines", 15)
-				.addConfiguration("outputField", "/").addConfiguration("detailLineField", "/detail")
-				.addConfiguration("splitDetails", true).addConfiguration("separator", ",")
-				.addConfiguration("headerType", DetailsColumnHeaderType.USE_HEADER)
-				.setExecutionMode(ExecutionMode.STANDALONE).setResourcesDir("/tmp").addOutputLane("output").build();
-
-		runner.runInit();
-
-		try {
-			Record r0 = createRecordWithValueAndTemplate(value);
-			List<Record> input = ImmutableList.of(r0);
-			StageRunner.Output output = runner.runProcess(input);
-
-			List<Record> op = output.getRecords().get("output");
-
-			System.out.println(op.get(0).get("/detail").getValueAsListMap());
-
-			assertEquals(16, op.size());
-			// assertEquals("11:02:12.000",
-			// StringUtils.substring(op.get(0).get("/detail").getValueAsString(), 0, 12));
-
-		} finally {
-			runner.runDestroy();
-		}
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void testLineSplit2() throws StageException, IOException {
-		InputStream stream = null;
-
-		stream = Thread.currentThread().getContextClassLoader()
-				.getResourceAsStream("ROW01_N02_01B0B628_RB_20Hz_20161010_110212_small.txt");
-		String value = IOUtils.toString(stream);
-
-		File dir = new File("target", UUID.randomUUID().toString());
-		dir.mkdirs();
-		Configuration.setFileRefsBaseDir(dir);
-
-		// UtahParserDProcessor processor = new UtahParserDProcessor();
-
-		List<HeaderExtractorConfig> headerExtractorConfigs = new ArrayList<>();
-		HeaderExtractorConfig config = new HeaderExtractorConfig();
-		config.key = null;
-		config.lineNumber = 3;
-
-		config.regex = "(\\w*)[:=, ]*(\"[^\"]*\"|[^\\s]*)";
-		headerExtractorConfigs.add(config);
-
-		ProcessorRunner runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, null)
-				.addConfiguration("fieldPathToParse", "/value").addConfiguration("dataFormat", DataFormatType.AS_BLOB)
-				.addConfiguration("keepOriginalFields", false)
-				.addConfiguration("headerExtractorConfigs", headerExtractorConfigs)
-				.addConfiguration("headerDetailSeparator", "^-----")
-				// .addConfiguration("nofHeaderLines", 15)
-				.addConfiguration("outputField", "/").addConfiguration("detailLineField", "/")
-				.addConfiguration("splitDetails", true).addConfiguration("separator", ",")
-				.addConfiguration("headerType", DetailsColumnHeaderType.USE_HEADER)
-				.setExecutionMode(ExecutionMode.STANDALONE).setResourcesDir("/tmp").addOutputLane("output").build();
-
-		runner.runInit();
-
-		try {
-			Record r0 = createRecordWithValueAndTemplate(value);
-			List<Record> input = ImmutableList.of(r0);
-			StageRunner.Output output = runner.runProcess(input);
-
-			List<Record> op = output.getRecords().get("output");
-
-			System.out.println(op.get(0));
-
-			assertEquals(16, op.size());
-			// assertEquals("11:02:12.000",
-			// StringUtils.substring(op.get(0).get("/detail").getValueAsString(), 0, 12));
-
-		} finally {
-			runner.runDestroy();
-		}
-	}
 }
