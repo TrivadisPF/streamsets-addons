@@ -25,7 +25,7 @@ public class AzureConfig {
   @ConfigDef(
       required = false,
       type = ConfigDef.Type.CREDENTIAL,
-      label = "Account Name",
+      label = "The Azure Storage Account Name. Only specify the name, without the domain (<storage-account-name>.blob.core.windows.net).",
       displayPosition = -110,
       group = "WASB"
   )

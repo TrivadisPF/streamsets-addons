@@ -129,14 +129,13 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 				batchMaker.addRecord(record);
 			} else if (getConfig().dataFormat.equals(DataFormatType.AS_WHOLE_FILE)) {
 				HashMap<String, Field> root = new HashMap<>();
-			    root.put("fileRef", Field.create(new WASBFileRef.Builder()
-			    				.storageAccountName(getConfig().azureConfig.accountName)
-			    				.storageAccountAccessKey(getConfig().azureConfig.accountKey)
-			    				.containerName(containerName)
-			    				.objectPath(objectPath)
-			    				.useSSE(true).build()));
 			    		
-			    record.set("/", Field.create(root));
+			    record.set("/fileRef", Field.create(new WASBFileRef.Builder()
+	    				.storageAccountName(getConfig().azureConfig.accountName)
+	    				.storageAccountAccessKey(getConfig().azureConfig.accountKey)
+	    				.containerName(containerName)
+	    				.objectPath(objectPath)
+	    				.useSSE(true).build()));
 
 			    HashMap<String, Field> fileInfo = new HashMap<>();
 //			    fileInfo.put("size", Field.create(utf8str.length()));

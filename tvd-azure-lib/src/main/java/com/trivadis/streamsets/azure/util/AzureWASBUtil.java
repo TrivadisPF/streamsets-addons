@@ -48,6 +48,7 @@ public class AzureWASBUtil {
 			container.createIfNotExists(BlobContainerPublicAccessType.CONTAINER, new BlobRequestOptions(),
 					new OperationContext());
 			blob = container.getBlockBlobReference(StringUtils.removeStart(objectPath, "/"));
+			
 			metadata = blob.getMetadata();
 		} catch (StorageException e) {
 			throw new IOException(e);
