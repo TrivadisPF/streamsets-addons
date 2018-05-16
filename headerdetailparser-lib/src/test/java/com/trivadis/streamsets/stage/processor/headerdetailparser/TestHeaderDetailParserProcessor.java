@@ -329,7 +329,7 @@ public class TestHeaderDetailParserProcessor {
 		assertEquals("ROW01", headerDetails.get(0).get("/Position").getValueAsString());
 		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
 		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
-		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/SGHalf47").getValueAsString());
+		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
 	}	
 	
 	@Test

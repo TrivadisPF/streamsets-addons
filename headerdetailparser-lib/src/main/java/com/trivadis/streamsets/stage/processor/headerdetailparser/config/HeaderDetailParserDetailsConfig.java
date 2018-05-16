@@ -55,6 +55,8 @@ public class HeaderDetailParserDetailsConfig {
 		      defaultValue = "TO_ERROR",
 		      label = "Not Enough Splits",
 		      description="Action for data that has fewer splits than configured field paths",
+		      dependsOn = "^parserConfig.splitDetails",
+		      triggeredByValue = "true",
 		      displayPosition = 40,
 		      group = "DETAILS"
 		  )
@@ -68,6 +70,8 @@ public class HeaderDetailParserDetailsConfig {
 		      defaultValue = "TO_LAST_FIELD",
 		      label = "Too Many Splits",
 		      description="Action for data that more splits than configured field paths",
+		      dependsOn = "^parserConfig.splitDetails",
+			  triggeredByValue = "true",
 		      displayPosition = 50,
 		      group = "DETAILS"
 		  )
