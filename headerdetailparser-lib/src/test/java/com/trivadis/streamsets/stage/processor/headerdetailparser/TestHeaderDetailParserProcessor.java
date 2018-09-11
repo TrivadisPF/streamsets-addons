@@ -132,6 +132,18 @@ public class TestHeaderDetailParserProcessor {
 		return headerConfig;
 	}
 
+	
+	private HeaderDetailParserHeaderConfig getHeaderConfigNoHeaders(String headerDetailSpeparator, Integer nofHeaderLines) {
+		HeaderDetailParserHeaderConfig headerConfig = new HeaderDetailParserHeaderConfig();
+
+		headerConfig.headerExtractorConfigs = new ArrayList<>();
+			
+		headerConfig.headerDetailSeparator = headerDetailSpeparator;
+		headerConfig.nofHeaderLines = nofHeaderLines;
+
+		return headerConfig;
+	}
+
 	private HeaderDetailParserHeaderConfig getHeaderConfigHeaderLeft(String headerDetailSpeparator, Integer nofHeaderLines) {
 		HeaderDetailParserHeaderConfig headerConfig = new HeaderDetailParserHeaderConfig();
 
@@ -369,7 +381,7 @@ public class TestHeaderDetailParserProcessor {
 		processor.parserConfig.detailLineField = "/detail";
 
 		// prepare header config
-		processor.headerConfig = getHeaderConfig(null, 0);
+		processor.headerConfig = getHeaderConfigNoHeaders(null, 0);
 
 		// prepare details config
 		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
