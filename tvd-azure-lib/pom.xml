@@ -23,7 +23,7 @@
   <artifactId>tvd-azure-lib</artifactId>
 
   <properties>
-    <streamsets.version>3.2.0.0</streamsets.version>
+    <streamsets.version>3.4.1</streamsets.version>
     <slf4j.version>1.7.7</slf4j.version>
     <commons-io.version>2.6</commons-io.version>
    	<azure-storage.version>7.0.0</azure-storage.version>
@@ -61,7 +61,7 @@
     <dependency>
       <groupId>com.streamsets</groupId>
       <artifactId>streamsets-datacollector-common</artifactId>
-      <version>3.2.0.0-SNAPSHOT</version>
+      <version>3.5.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
              
