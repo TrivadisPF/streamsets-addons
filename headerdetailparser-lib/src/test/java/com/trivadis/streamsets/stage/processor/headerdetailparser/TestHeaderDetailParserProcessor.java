@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class TestHeaderDetailParserProcessor {
 	private final static int NOF_HEADER_LINES = 15;
 	private final static String TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER = "with_header_and_details_col_header.txt";
 	private final static String TEST_FILE_WITH_HEADER_AND_NO_DETAILS_HEADER = "with_header_and_NO_details_col_header.txt";
+	private final static String TEST_FILE_WITH_HEADER_LEFT_AND_DETAILS_HEADER = "with_header_left_and_details_col_header.txt";
 	private final static String TEST_FILE_EMPTY = "empty.txt";
 
 	private HeaderDetailParserDProcessor processor;
@@ -129,6 +131,31 @@ public class TestHeaderDetailParserProcessor {
 		return headerConfig;
 	}
 
+	private HeaderDetailParserHeaderConfig getHeaderConfigHeaderLeft(String headerDetailSpeparator, Integer nofHeaderLines) {
+		HeaderDetailParserHeaderConfig headerConfig = new HeaderDetailParserHeaderConfig();
+
+		headerConfig.headerExtractorConfigs = new ArrayList<>();
+		HeaderExtractorConfig config = null; 
+		
+		config = new HeaderExtractorConfig();
+		config.key = null;
+		config.lineNumber = 2;
+		config.regex = "(\\w[^\\t]+[A-Za-z\\.])[\"\\t]*(\\w[^\\t]+\\w)";
+		headerConfig.headerExtractorConfigs.add(config);
+
+		config = new HeaderExtractorConfig();
+		config.key = null;
+		config.lineNumber = 3;
+		config.regex = "(\\w[^\\t]+[A-Za-z\\.])[\"\\t]*(\\w[^\\t]+\\w)";
+		headerConfig.headerExtractorConfigs.add(config);
+	
+		headerConfig.headerDetailSeparator = headerDetailSpeparator;
+		headerConfig.nofHeaderLines = nofHeaderLines;
+
+		return headerConfig;
+	}
+
+	
 	@Before
 	public void setup() throws StageException {
 		File dir = new File("target", UUID.randomUUID().toString());
@@ -178,7 +205,7 @@ public class TestHeaderDetailParserProcessor {
 		assertEquals(1, header.size());
 		assertEquals("ROW01", header.get(0).get("/Location").getValueAsString());
 		assertEquals("ROW01", header.get(0).get("/Position").getValueAsString());
-		assertEquals(16, headerDetails.size());
+		assertEquals(18, headerDetails.size());
 		assertEquals("11:02:12.000", StringUtils.substring(headerDetails.get(0).get("/detail").getValueAsString(), 0, 12));
 	}
 
@@ -214,7 +241,7 @@ public class TestHeaderDetailParserProcessor {
 		}
 
 		// assert
-		assertEquals(16, op.size());
+		assertEquals(18, op.size());
 		assertEquals("11:02:12.000", StringUtils.substring(op.get(0).get("/detail").getValueAsString(), 0, 12));
 	}
 	
@@ -286,7 +313,7 @@ public class TestHeaderDetailParserProcessor {
 		}
 
 		// assert
-		assertEquals(16, op.size());
+		assertEquals(18, op.size());
 		assertEquals("11:02:12.000", StringUtils.substring(op.get(0).get("/detail").getValueAsString(), 0, 12));
 	}	
 	
@@ -324,12 +351,103 @@ public class TestHeaderDetailParserProcessor {
 		}
 
 		// assert
-		assertEquals(16, headerDetails.size());
+		assertEquals(18, headerDetails.size());
 		assertEquals("ROW01", headerDetails.get(0).get("/Location").getValueAsString());
 		assertEquals("ROW01", headerDetails.get(0).get("/Position").getValueAsString());
 		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
 		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
 		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
+	}	
+	
+	
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_headerLeftSplitOnNofLines_splitDetailsUsingColHeader() throws StageException, IOException {
+
+		// prepare parser config
+		processor.parserConfig.splitDetails = true;
+		processor.parserConfig.detailLineField = "/detail";
+
+		// prepare header config
+		processor.headerConfig = getHeaderConfigHeaderLeft(null, 0);
+		processor.headerConfig.nofHeaderLines = 0;
+
+		// prepare details config
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
+		processor.detailsConfig.separator = "\\t";
+		
+		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
+				.setExecutionMode(ExecutionMode.STANDALONE)
+				.setResourcesDir("/tmp")
+				.addOutputLane("header").addOutputLane("headerDetails")
+				.build();
+		runner.runInit();
+
+		// run the test
+		List<Record> headerDetails = null;
+		try {
+			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_LEFT_AND_DETAILS_HEADER);
+			StageRunner.Output output = runner.runProcess(input);
+
+			headerDetails = output.getRecords().get("headerDetails");
+
+		} finally {
+			runner.runDestroy();
+		}
+
+		// assert
+		assertEquals(31, headerDetails.size());
+		assertEquals("ICL-02i/80", headerDetails.get(0).get("/Logger Type").getValueAsString());
+		assertEquals("AK02691349", headerDetails.get(0).get("/Logger serial no.").getValueAsString());
+		assertEquals("21-03-2017 07:02", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Date time").getValueAsString());
+		assertEquals("0.09634", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Uac (V)").getValueAsString());
+		assertEquals("6.44879", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Iac (mA)").getValueAsString());
+	}		
+	
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_headerLeftSplitOnNofLines_splitDetailsIgnoreColHeader() throws StageException, IOException {
+
+		// prepare parser config
+		processor.parserConfig.splitDetails = true;
+		processor.parserConfig.detailLineField = "/detail";
+
+		// prepare header config
+		processor.headerConfig = getHeaderConfigHeaderLeft(null, 0);
+		processor.headerConfig.nofHeaderLines = 0;
+
+		// prepare details config
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.IGNORE_HEADER;
+		processor.detailsConfig.separator = "\\t";
+		processor.detailsConfig.fieldPathsForSplits = Arrays.asList("/d1", "/d2", "/d3", "/d4", "/Datetime", "/uac", "/iac", "/jac", "/rs", "idc", "/jdc", "/edc", "/rr", "/rc", "/d", "power", "warnings");
+		processor.detailsConfig.onStagePreConditionFailure = OnStagePreConditionFailure.CONTINUE;
+		
+		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
+				.setExecutionMode(ExecutionMode.STANDALONE)
+				.setResourcesDir("/tmp")
+				.addOutputLane("header").addOutputLane("headerDetails")
+				.build();
+		runner.runInit();
+
+		// run the test
+		List<Record> headerDetails = null;
+		try {
+			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_LEFT_AND_DETAILS_HEADER);
+			StageRunner.Output output = runner.runProcess(input);
+
+			headerDetails = output.getRecords().get("headerDetails");
+
+		} finally {
+			runner.runDestroy();
+		}
+
+		// assert
+		assertEquals(31, headerDetails.size());
+		assertEquals("ICL-02i/80", headerDetails.get(0).get("/Logger Type").getValueAsString());
+		assertEquals("AK02691349", headerDetails.get(0).get("/Logger serial no.").getValueAsString());
+		assertEquals("21-03-2017 07:02", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Datetime").getValueAsString());
+		assertEquals("0.09634", headerDetails.get(0).get("/detail").getValueAsListMap().get("/uac").getValueAsString());
+		assertEquals("6.44879", headerDetails.get(0).get("/detail").getValueAsListMap().get("/iac").getValueAsString());
 	}	
 	
 	@Test

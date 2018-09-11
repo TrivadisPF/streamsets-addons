@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +167,6 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 	
 	private void processText(InputStream is, Record orinalRecord, BatchMaker batchMaker) throws StageException {
 		List<String> headers = new ArrayList<>();
-		String detailHeader = null;
         Record record = null;
         String line = null;
        
@@ -181,39 +181,38 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
         	record = getContext().createRecord(orinalRecord);
             record.set(Field.create(new HashMap<String, Field>()));
         }
-        	
+       
+        // get the largest value of headerExtractorConfig.headerConfig.lineNumber and the headerConfig.nofHeaderLines
+		int nofHeaderLines = (getHeaderConfig().nofHeaderLines !=null) ? getHeaderConfig().nofHeaderLines : 0;
+		if (headerDetailSeparatorRegex == null) {
+			for (HeaderExtractorConfig headerExtractorConfig : getHeaderConfig().headerExtractorConfigs) {
+				nofHeaderLines = Integer.max(nofHeaderLines, headerExtractorConfig.lineNumber);
+			}
+		}
+		System.out.println("nofHeaderLines = " + nofHeaderLines);
+		
 		Scanner scan = new Scanner(is);
 		
 		boolean withinHeader = true;
-		boolean parseDetailHeader = true;
 
-		int i = 1;
-		while (scan.hasNextLine()) {
+		int idx = 1;
+		while (withinHeader && scan.hasNextLine()) {
 			line = scan.nextLine();
 
 			if (withinHeader) {
 				if (headerDetailSeparatorRegex != null && headerDetailSeparatorRegex.matcher(line).find()) {
+					line = scan.nextLine();
 					withinHeader = false;
-				} else if (getHeaderConfig().nofHeaderLines != null && i >= getHeaderConfig().nofHeaderLines) {
+				} else if (getHeaderConfig().nofHeaderLines != null && idx > nofHeaderLines) {
 					withinHeader = false;
 				} else {
 					headers.add(line);
 				}
-			} else {
-				System.out.println("Number of header lines: " + headers.size());
-				
-				if (!getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.NO_HEADER) && parseDetailHeader) {
-					detailHeader = line;
-					parseDetailHeader = false;
-					System.out.println("detail header: " + line);
-				} else {
-					break;
-				}
-			}
-			i++;
+			} 
+			idx++;
 		}
 		
-		if (i==1) {
+		if (idx==1) {
 			throw new OnRecordErrorException(Errors.HEADERDETAILP_06, record.getHeader().getSourceId());
 		}
 		
@@ -221,8 +220,6 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 			for (HeaderExtractorConfig headerExtractorConfig : getHeaderConfig().headerExtractorConfigs) {
 	
 				String header = headers.get(headerExtractorConfig.lineNumber-1);
-				System.out.println("header: " + header);
-				System.out.println("regex: " + headerExtractorConfig.regex);
 				Matcher matcher = getPattern(patterns, headerExtractorConfig.regex).matcher(header);
 				if (matcher.find()) {
 					LOG.info("matcher found");
@@ -241,15 +238,39 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 			}
 			batchMaker.addRecord(record, headerLane);
 		}
-		
-		while (line != null && line.length() > 0) {
-			processDetailLine(record, line, detailHeader);
-			batchMaker.addRecord(record, headerAndDetailLane);
 
+		String detailHeader = null;
+		boolean parseDetailHeader = true;
+
+		// if there is an overlap of header lines and details
+		if (getHeaderConfig().nofHeaderLines != null && getHeaderConfig().nofHeaderLines != headers.size()) {
+			// loop through detail lines which were also part of header and process them
+			for (int i = getHeaderConfig().nofHeaderLines; i < headers.size(); i++) {
+				if (!getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.NO_HEADER) && parseDetailHeader) {
+					detailHeader = line;
+					parseDetailHeader = false;
+					detailHeader = headers.get(i);
+				} else {
+					processDetailLine(record, headers.get(i), detailHeader);
+					batchMaker.addRecord(record, headerAndDetailLane);
+				}
+			}
+		}
+		
+		// loop through detail lines not part of header and process them
+		while (line != null && line.length() > 0) {
+			if (!getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.NO_HEADER) && parseDetailHeader) {
+				detailHeader = line;
+				parseDetailHeader = false;
+			} else {
+				processDetailLine(record, line, detailHeader);
+				batchMaker.addRecord(record, headerAndDetailLane);
+			}
 			line = (scan.hasNextLine()) ? scan.nextLine() : null;
 		}
 		scan.close();
 	}
+		
 	
 	public Field processDetailLine(Record record, String line, String detailHeader) throws StageException {
 		Field field = null;
@@ -267,7 +288,8 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 			if (getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.USE_HEADER)) {
 				fieldPaths = detailHeader.split(getDetailsConfig().separator);
 				for (int i = 0; i < fieldPaths.length; i++) {
-					fieldPaths[i] = "/" + fieldPaths[i];
+					// get the field name from the header, removing double quotes and single quotes from the text 
+					fieldPaths[i] = "/" + StringUtils.remove(StringUtils.remove(fieldPaths[i], "\""), "'");
 				}
 			}
 
