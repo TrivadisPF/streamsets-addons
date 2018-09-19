@@ -161,7 +161,11 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 				throw new OnRecordErrorException(
 			                Errors.HEADERDETAILP_04, record.getHeader().getSourceId(), e.getMessage());
 			}
-	    } 
+	    } else if (getParserConfig().inputDataFormat.equals(DataFormatType.AS_RECORDS)) {
+	    	original = record.get(getParserConfig().fieldPathToParse);
+	    	is = IOUtils.toInputStream(original.getValueAsString(), Charset.forName("UTF-8"));
+	    	processText(is, record, batchMaker);
+	    }
 
 	}
 	
@@ -189,7 +193,6 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 				nofHeaderLines = Integer.max(nofHeaderLines, headerExtractorConfig.lineNumber);
 			}
 		}
-		System.out.println("nofHeaderLines = " + nofHeaderLines);
 		
 		Scanner scan = new Scanner(is);
 		
