@@ -394,12 +394,15 @@ public class TestHeaderDetailParserProcessor {
 		runner.runInit();
 
 		// run the test
+		List<Record> headers = null;
 		List<Record> headerDetails = null;
 		try {
 			List<Record> input = prepareInput(TEST_FILE_WITHOUT_HEADER_BUT_WITH_DETAILS_COL_HEADER);
 			StageRunner.Output output = runner.runProcess(input);
 
+			headers = output.getRecords().get("header");
 			headerDetails = output.getRecords().get("headerDetails");
+			
 
 		} finally {
 			runner.runDestroy();
@@ -410,6 +413,52 @@ public class TestHeaderDetailParserProcessor {
 		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
 		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
 	}	
+	
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_noHeader_ignoreDetailColHeaderUsingNofHeaders() throws StageException, IOException {
+
+		// prepare parser config
+		processor.parserConfig.splitDetails = true;
+		processor.parserConfig.detailLineField = "/detail";
+
+		// prepare header config
+		processor.headerConfig = getHeaderConfigNoHeaders(null, 1);
+
+		// prepare details config
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.NO_HEADER;
+		processor.detailsConfig.separator = ",";
+		processor.detailsConfig.fieldPathsForSplits = Arrays.asList(StringUtils.split("/Time and Date,/PT100-0,/PT100-1,/PT100-2,/PT100-3,/PT100-4,/PT100-5,/PT100-6,/PT100-7,/PT100-8,/PT100-9,/PT100-10,/PT100-11,/PT100-12,/PT100-13,/PT100-14,/PT100-15,/AI0,/AI1,/AI2,/AI3,/AI4,/AI5,/AI6,/AI7,/AI8,/AI9,/AI10,/AI11,/AI12,/AI13,/AI14,/AI15,/SGQT0,/SGQT1,/SGQT2,/SGQT3,/SGQT4,/SGQT5,/SGQT6,/SGQT7,/SGQT8,/SGQT9,/SGQT10,/SGQT11,/SGQT12,/SGQT13,/SGQT14,/SGQT15,/SGQT16,/SGQT17,/SGQT18,/SGQT19,/SGQT20,/SGQT21,/SGQT22,/SGQT23,/sghalf0,/sghalf1,/sghalf2,/sghalf3,/sghalf4,/sghalf5,/sghalf6,/sghalf7,/sghalf8,/sghalf9,/sghalf10,/sghalf11,/sghalf12,/sghalf13,/sghalf14,/sghalf15,/sghalf16,/sghalf17,/sghalf18,/sghalf19,/sghalf20,/sghalf21,/sghalf22,/sghalf23,/sghalf24,/sghalf25,/sghalf26,/sghalf27,/sghalf28,/sghalf29,/sghalf30,/sghalf31,/sghalf32,/sghalf33,/sghalf34,/sghalf35,/sghalf36,/sghalf37,/sghalf38,/sghalf39,/sghalf40,/sghalf41,/sghalf42,/sghalf43,/sghalf44,/sghalf45,/sghalf46,/sghalf47",","));
+		
+		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
+				.setExecutionMode(ExecutionMode.STANDALONE)
+				.setResourcesDir("/tmp")
+				.addOutputLane("header").addOutputLane("headerDetails")
+				.build();
+		runner.runInit();
+
+		// run the test
+		List<Record> headers = null;
+		List<Record> headerDetails = null;
+		try {
+			List<Record> input = prepareInput(TEST_FILE_WITHOUT_HEADER_BUT_WITH_DETAILS_COL_HEADER);
+			StageRunner.Output output = runner.runProcess(input);
+
+			headers = output.getRecords().get("header");
+			headerDetails = output.getRecords().get("headerDetails");
+
+		} finally {
+			runner.runDestroy();
+		}
+
+		// assert
+		assertEquals(0, headers.size());
+		Record r = headerDetails.get(0);
+		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
+		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
+		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
+	}	
+	
 	
 	@Test
 	@SuppressWarnings("unchecked")

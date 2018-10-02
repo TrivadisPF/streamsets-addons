@@ -225,21 +225,24 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 				String header = headers.get(headerExtractorConfig.lineNumber-1);
 				Matcher matcher = getPattern(patterns, headerExtractorConfig.regex).matcher(header);
 				if (matcher.find()) {
-					LOG.info("matcher found");
+					LOG.debug("matcher found");
 					String key = headerExtractorConfig.key;
 					// take the value from group 1, if no key is specified
 					if (headerExtractorConfig.key == null || headerExtractorConfig.key.length() == 0) {
 						key = matcher.group(1);
 					}
-					LOG.info("key: " + key);
+					LOG.debug("key: " + key);
 					String val = matcher.group(2);
-					LOG.info("val: " + val);
+					LOG.debug("val: " + val);
 					record.set("/" + key, Field.create(val));
 				} else {
-					LOG.info("no matcher found: " + matcher);
+					LOG.debug("no matcher found: " + matcher);
 				}
 			}
-			batchMaker.addRecord(record, headerLane);
+			// only add an output to the headerLane, if there is at least one regex defined
+			if (getHeaderConfig().headerExtractorConfigs.size() > 0) {
+				batchMaker.addRecord(record, headerLane);
+			}
 		}
 
 		String detailHeader = null;
