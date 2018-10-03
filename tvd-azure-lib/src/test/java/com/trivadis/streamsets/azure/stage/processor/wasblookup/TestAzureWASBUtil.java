@@ -15,25 +15,26 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.microsoft.azure.storage.CloudStorageAccount;
+import com.microsoft.azure.storage.blob.BlobProperties;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.credential.CredentialValue;
 import com.trivadis.streamsets.azure.util.AzureWASBUtil;
 
 public class TestAzureWASBUtil {
-	private final static String TEST_CONTAINER = "raw-data";
-	private final static String TEST_OBJECT_PATH = "orsted/2018-05-03-15/ROW01_N02_01B0B628_RB_20Hz_20161010_110212_small21.txt.ready";
+	private final static String TEST_CONTAINER = "gus-test";
+	private final static String TEST_OBJECT_PATH = "big-test-wide.csv";
 	//private final static String TEST_OBJECT_PATH = "orsted/2018-04-20-21/ROW01_N02_01B0B628_RB_20Hz_20161010_110212-11.txt.ready";
 	private final static CredentialValue STORAGE_ACCOUNT_NAME = new CredentialValue() {
 		@Override
 		public String get() throws StageException {
-			return "porststac001";
+			return "dorstrefinedatastac001";
 		}
 	};
 	private final static CredentialValue STORAGE_ACCOUNT_ACCESS_KEY = new CredentialValue() {
 		@Override
 		public String get() throws StageException {
-			return "KlfnPZyUAKdmll/h+XCUISX6mhGtqZpASt/OwqPKNEj1jz6R1Ntxu0DpEl+SdtFoLlJLKalBhR5td6n8W2jElg==";
+			return "wxUsBLaNXzgJFV4YkNyfHnVKrjB5sxnbfYIFuqc1Y43gIqx/o+2qXHDoFuQuH7BGhXFZMjfoiDiNkNSO+gDVsQ==";
 		}
 	};
 	
@@ -62,12 +63,16 @@ public class TestAzureWASBUtil {
 	
 	@Test
 	public void testGetObject() throws IOException {
+		long startTime = System.currentTimeMillis();
+
 		InputStream is = AzureWASBUtil.getObject(blobClient, TEST_CONTAINER, TEST_OBJECT_PATH, true);
 		InputStreamReader inr = new InputStreamReader(is, "UTF-8");
 		String utf8str = IOUtils.toString(inr);
 
+		System.out.println("testGetObject - Total execution time: " + (System.currentTimeMillis()-startTime) + "ms"); 
+
 		assertNotNull(utf8str);
-		assertEquals(19728, utf8str.length());
+		assertEquals(169054181, utf8str.length());
 	}
 
 	@Test
@@ -77,7 +82,7 @@ public class TestAzureWASBUtil {
 		String utf8str = IOUtils.toString(inr);
 
 		assertNotNull(utf8str);
-		assertEquals(19728, utf8str.length());
+		assertEquals(169054181, utf8str.length());
 	}
 	
 	@Test
@@ -85,5 +90,12 @@ public class TestAzureWASBUtil {
 		Map<String, String> metadata = AzureWASBUtil.getMetaData(blobClient, TEST_CONTAINER, "/" + TEST_OBJECT_PATH, true);
 		System.out.println(metadata);
 	}
+	
+	@Test
+	public void testGetBlobProoperties() throws IOException {
+		BlobProperties blob = AzureWASBUtil.getBlobProperties(blobClient, TEST_CONTAINER, "/" + TEST_OBJECT_PATH, true);
+		System.out.println("lenght:" + blob.getLength());
+		System.out.println(blob);
+	}	
 
 }
