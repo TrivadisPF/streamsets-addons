@@ -25,7 +25,7 @@ public class HeaderDetailParserDetailsConfig {
 	      type = ConfigDef.Type.STRING,
 	      defaultValue = ",",
 	      label = "Separator",
-	      description = "Regular expression to use for splitting the field. If trying to split on a RegEx meta" +
+	      description = "Regular expression or simple character(s) to use for splitting the field. If trying to split on a RegEx meta" +
 	          " character \".$|()[{^?*+\\\", the character must be escaped with \\",
 	      dependsOn = "^parserConfig.splitDetails",
 	      triggeredByValue = "true",
@@ -33,6 +33,19 @@ public class HeaderDetailParserDetailsConfig {
 	      group = "DETAILS"
 	  )
 	public String separator;
+	
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.BOOLEAN,
+		      defaultValue = "true",
+		      label = "Separator wiht Regexp?",
+		      description = "Should the separator be treated as a Regular Expression or just as simple character(s)",
+		      dependsOn = "^parserConfig.splitDetails",
+		      triggeredByValue = "true",
+		      displayPosition = 25,
+		      group = "DETAILS"
+		  )
+	public boolean separatorAsRegex;
 	
 	@ConfigDef(
 	      required = false,

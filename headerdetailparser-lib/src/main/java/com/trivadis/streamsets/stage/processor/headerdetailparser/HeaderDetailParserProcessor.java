@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +34,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.hppc.CharScatterSet;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.streamsets.pipeline.api.BatchMaker;
 import com.streamsets.pipeline.api.ErrorCode;
@@ -48,6 +51,7 @@ import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderD
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserDetailsConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserHeaderConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.TooManySplitsAction;
+
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DetailsColumnHeaderType;
 
 
@@ -80,6 +84,27 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 			}
 			return pattern;
 		}
+	}
+
+	private Splitter limitSplitter = null;
+	
+	private List<String> split(String text, String separator, int limit) {
+		String newSeparator = separator.replace("\\t", "\t");
+		List<String> result;
+		if (getDetailsConfig().separatorAsRegex) {
+			result = Arrays.asList(text.split(separator, limit));
+		} else {
+			if (limit > 0) {
+				if (limitSplitter == null) {
+					LOG.info("Build spliter with separator: " + newSeparator.replace("\t", "TAB"));
+					limitSplitter = Splitter.on(newSeparator).limit(limit);
+				}
+				result = limitSplitter.splitToList(text);
+			} else {
+				result = Splitter.on(newSeparator).splitToList(text);
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -122,6 +147,7 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 	/** {@inheritDoc} */
 	@Override
 	protected void process(Record record, BatchMaker batchMaker) throws StageException {
+		long startTime = System.currentTimeMillis();
 
 	    if (getParserConfig().keepOriginalFields && !record.get().getType().isOneOf(Field.Type.MAP, Field.Type.LIST_MAP)) {
 	        String errorValue;
@@ -166,10 +192,11 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 	    	is = IOUtils.toInputStream(original.getValueAsString(), Charset.forName("UTF-8"));
 	    	processText(is, record, batchMaker);
 	    }
+	    LOG.info("HeaderDetailParser Time: " + (System.currentTimeMillis()-startTime) + "ms"); 
 
 	}
 	
-	private void processText(InputStream is, Record orinalRecord, BatchMaker batchMaker) throws StageException {
+	private void processText(InputStream is, Record originalRecord, BatchMaker batchMaker) throws StageException {
 		List<String> headers = new ArrayList<>();
         Record record = null;
         String line = null;
@@ -179,12 +206,15 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
         	headerDetailSeparatorRegex = Pattern.compile(getHeaderConfig().headerDetailSeparator);   
         }
         
-        if (getParserConfig().keepOriginalFields) {
-        	record = getContext().cloneRecord(orinalRecord);
-        } else {
-        	record = getContext().createRecord(orinalRecord);
-            record.set(Field.create(new HashMap<String, Field>()));
+    	record = originalRecord;
+        if (!getParserConfig().keepOriginalFields) {
+        	record.delete(getParserConfig().fieldPathToParse);
+        	record.delete("/fileRef");
         }
+//        } else {
+//        	record = getContext().createRecord(originalRecord);
+//            record.set(Field.create(new HashMap<String, Field>()));
+//        }
        
         // get the largest value of headerExtractorConfig.headerConfig.lineNumber and the headerConfig.nofHeaderLines
 		int nofHeaderLines = (getHeaderConfig().nofHeaderLines !=null) ? getHeaderConfig().nofHeaderLines : 0;
@@ -287,16 +317,21 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 		}
 		
 		if (getParserConfig().splitDetails) {
-			String[] splits = null;
-			String[] fieldPaths = fieldPathFromConfiguration;
+			List<String> splits = null;
+			List<String> fieldPaths = null;
 			LinkedHashMap<String, Field> listMap = new LinkedHashMap<>();
 			
 			if (getDetailsConfig().detailsColumnHeaderType.equals(DetailsColumnHeaderType.USE_HEADER)) {
-				fieldPaths = detailHeader.split(getDetailsConfig().separator);
-				for (int i = 0; i < fieldPaths.length; i++) {
+//				fieldPaths = split(detailHeader, getDetailsConfig().separator, 0);
+				
+//				fieldPaths = detailHeader.split(getDetailsConfig().separator);
+				fieldPaths = new ArrayList<String>();
+				for (String s: split(detailHeader, getDetailsConfig().separator, 0)) {
 					// get the field name from the header, removing double quotes and single quotes from the text 
-					fieldPaths[i] = "/" + StringUtils.remove(StringUtils.remove(fieldPaths[i], "\""), "'");
+					fieldPaths.add( "/" + StringUtils.remove(StringUtils.remove(s, "\""), "'"));
 				}
+			} else {
+				fieldPaths = getDetailsConfig().fieldPathsForSplits;
 			}
 
 			/**
@@ -304,36 +339,38 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 			 */
 			switch (getDetailsConfig().tooManySplitsAction) {
 		        case TO_LAST_FIELD:
-		          splits = line.split(getDetailsConfig().separator, fieldPaths.length);
+		          splits = split(line, getDetailsConfig().separator, fieldPaths.size());
 		          break;
 		        case TO_LIST:
-		          splits = line.split(getDetailsConfig().separator);
+		          splits = split(line, getDetailsConfig().separator, 0);
 		          break;
 		        default:
 		          throw new IllegalArgumentException("Unsupported value for too many splits action: " + getDetailsConfig().tooManySplitsAction);
 			 }
-	        if (splits.length < fieldPaths.length) {
+	        if (splits.size() < fieldPaths.size()) {
 	        	throw new OnRecordErrorException(Errors.HEADERDETAILP_02, record.getHeader().getSourceId());
 	        }
 	        
 	        int i = 0;
-	        for (i = 0; i < fieldPaths.length; i++) {
+	        for (String s: splits) {
+//	        for (i = 0; i < fieldPaths.size; i++) {
 	          try {
-	            if (splits != null && splits.length > i) {
-	              listMap.put(fieldPaths[i], Field.create(splits[i]));
+	            if (splits != null && splits.size() > i) {
+	              listMap.put(fieldPaths.get(i), Field.create(s));
 	            } else {
-	              listMap.put(fieldPaths[i], Field.create(Field.Type.STRING, null));
+	              listMap.put(fieldPaths.get(i), Field.create(Field.Type.STRING, null));
 	            }
 	          } catch (IllegalArgumentException e) {
-	            throw new OnRecordErrorException(Errors.HEADERDETAILP_07, fieldPaths[i], record.getHeader().getSourceId(),
+	            throw new OnRecordErrorException(Errors.HEADERDETAILP_07, fieldPaths.get(i), record.getHeader().getSourceId(),
 	              e.toString());
 	          }
+	          i++;
 	        }
 
-	        if (splits != null && i < splits.length && getDetailsConfig().tooManySplitsAction == TooManySplitsAction.TO_LIST) {
+	        if (splits != null && i < splits.size() && getDetailsConfig().tooManySplitsAction == TooManySplitsAction.TO_LIST) {
 	          List<Field> remainingSplits = Lists.newArrayList();
-	          for (int j = i; j < splits.length; j++) {
-	            remainingSplits.add(Field.create(splits[j]));
+	          for (int j = i; j < splits.size(); j++) {
+	            remainingSplits.add(Field.create(splits.get(j)));
 	          }
 	          listMap.put(getDetailsConfig().remainingSplitsPath, Field.create(remainingSplits));
 	        }	   
