@@ -16,8 +16,6 @@
 package com.trivadis.streamsets.stage.processor.headerdetailparser;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -56,7 +54,6 @@ import _ss_org.apache.commons.lang3.StringUtils;
 public class TestHeaderDetailParserProcessor {
 	private final static int NOF_HEADER_LINES = 15;
 	private final static String TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER = "with_header_and_details_col_header.txt";
-	private final static String TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER_TSV = "with_header_and_details_col_header-tsv.txt";
 	private final static String TEST_FILE_WITH_HEADER_AND_NO_DETAILS_HEADER = "with_header_and_NO_details_col_header.txt";
 	private final static String TEST_FILE_WITH_HEADER_LEFT_AND_DETAILS_HEADER = "with_header_left_and_details_col_header.txt";
 	private final static String TEST_FILE_WITHOUT_HEADER_BUT_WITH_DETAILS_COL_HEADER = "without_header_but_with_details_col_header.txt";
@@ -86,7 +83,6 @@ public class TestHeaderDetailParserProcessor {
 		HeaderDetailParserDetailsConfig config = new HeaderDetailParserDetailsConfig();
 		config.fieldPathsForSplits = null;
 		config.separator = ",";
-		config.separatorAsRegex = true;
 		config.onStagePreConditionFailure = OnStagePreConditionFailure.TO_ERROR;
 		config.tooManySplitsAction = TooManySplitsAction.TO_LAST_FIELD;
 		return config;
@@ -184,13 +180,13 @@ public class TestHeaderDetailParserProcessor {
 		processor.headerConfig =  getHeaderParserConfig();
 		processor.detailsConfig =  getDetailsParserConfig();
 	}
-	
+
 	@Test
 	@SuppressWarnings("unchecked")
 	public void test_headerSplitOnRegex() throws StageException, IOException {
 
 		// prepare parser config
-		
+
 		// prepare header config
 		processor.headerConfig = getHeaderConfig("^-----", null);
 
@@ -220,54 +216,6 @@ public class TestHeaderDetailParserProcessor {
 
 		// assert
 		assertEquals(1, header.size());
-
-		assertFalse("/value should be part of output, due to keepOriginalFields", headerDetails.get(0).has("/value"));
-
-		assertEquals("ROW01", header.get(0).get("/Location").getValueAsString());
-		assertEquals("ROW01", header.get(0).get("/Position").getValueAsString());
-		assertEquals(18, headerDetails.size());
-		assertEquals("11:02:12.000", StringUtils.substring(headerDetails.get(0).get("/detail").getValueAsString(), 0, 12));
-	}
-	
-	@Test
-	@SuppressWarnings("unchecked")
-	public void test_headerSplitOnRegexKeepOriginalFields() throws StageException, IOException {
-
-		// prepare parser config
-		processor.parserConfig.keepOriginalFields = true;
-		
-		// prepare header config
-		processor.headerConfig = getHeaderConfig("^-----", null);
-
-		// prepare details config
-		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.IGNORE_HEADER;
-		
-		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
-				.setExecutionMode(ExecutionMode.STANDALONE)
-				.setResourcesDir("/tmp")
-				.addOutputLane("header").addOutputLane("headerDetails")
-				.build();
-		runner.runInit();
-
-		// run the test
-		List<Record> header = null;
-		List<Record> headerDetails = null;
-		try {
-			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER);
-			StageRunner.Output output = runner.runProcess(input);
-
-			header = output.getRecords().get("header");
-			headerDetails = output.getRecords().get("headerDetails");
-
-		} finally {
-			runner.runDestroy();
-		}
-
-		// assert
-		assertEquals(1, header.size());
-
-		assertTrue("/value should be part of output, due to keepOriginalFields", headerDetails.get(0).has("/value"));
-
 		assertEquals("ROW01", header.get(0).get("/Location").getValueAsString());
 		assertEquals("ROW01", header.get(0).get("/Position").getValueAsString());
 		assertEquals(18, headerDetails.size());
@@ -344,8 +292,7 @@ public class TestHeaderDetailParserProcessor {
 
 		// assert
 		assertEquals(0, header.size());
-	}		
-	
+	}	
 	
 	@Test
 	@SuppressWarnings("unchecked")
@@ -424,91 +371,6 @@ public class TestHeaderDetailParserProcessor {
 		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
 		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
 	}	
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void test_headerSplitOnNofLines_splitDetailsUsingColHeaderNoRegexpSplitterForDetails() throws StageException, IOException {
-
-		// prepare parser config
-		processor.parserConfig.splitDetails = true;
-		processor.parserConfig.detailLineField = "/detail";
-
-		// prepare header config
-		processor.headerConfig = getHeaderConfig(null, NOF_HEADER_LINES);
-
-		// prepare details config
-		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
-		processor.detailsConfig.separatorAsRegex = false;
-		
-		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
-				.setExecutionMode(ExecutionMode.STANDALONE)
-				.setResourcesDir("/tmp")
-				.addOutputLane("header").addOutputLane("headerDetails")
-				.build();
-		runner.runInit();
-
-		// run the test
-		List<Record> headerDetails = null;
-		try {
-			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER);
-			StageRunner.Output output = runner.runProcess(input);
-
-			headerDetails = output.getRecords().get("headerDetails");
-
-		} finally {
-			runner.runDestroy();
-		}
-
-		// assert
-		assertEquals(18, headerDetails.size());
-		assertEquals("ROW01", headerDetails.get(0).get("/Location").getValueAsString());
-		assertEquals("ROW01", headerDetails.get(0).get("/Position").getValueAsString());
-		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
-		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
-		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
-	}	
-	
-	@Test
-	@SuppressWarnings("unchecked")
-	public void test_headerSplitOnNofLinesTSV() throws StageException, IOException {
-
-		// prepare parser config
-		processor.parserConfig.splitDetails = true;
-
-		// prepare header config
-		processor.headerConfig = getHeaderConfig(null, NOF_HEADER_LINES);
-
-		// prepare details config
-		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
-		processor.detailsConfig.separator = "\\t";
-		processor.detailsConfig.separatorAsRegex = false;
-		
-		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
-				.setExecutionMode(ExecutionMode.STANDALONE)
-				.setResourcesDir("/tmp")
-				.addOutputLane("header").addOutputLane("headerDetails")
-				.build();
-		runner.runInit();
-
-		// run the test
-		List<Record> headerDetails = null;
-		try {
-			List<Record> input = prepareInput(TEST_FILE_WITH_HEADER_AND_DETAILS_HEADER_TSV);
-			StageRunner.Output output = runner.runProcess(input);
-
-			headerDetails = output.getRecords().get("headerDetails");
-
-		} finally {
-			runner.runDestroy();
-		}
-
-		// assert
-		assertEquals(18, headerDetails.size());
-		assertEquals("11:02:12.000 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/Time and Date").getValueAsString());
-		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/PT100-0").getValueAsString());
-		assertEquals("-25013.7066", headerDetails.get(0).get("/detail").getValueAsListMap().get("/sghalf47").getValueAsString());
-	}
-	
 	
 	@Test
 	@SuppressWarnings("unchecked")
@@ -613,7 +475,6 @@ public class TestHeaderDetailParserProcessor {
 		// prepare details config
 		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.USE_HEADER;
 		processor.detailsConfig.separator = "\\t";
-		processor.detailsConfig.separatorAsRegex = true;
 		
 		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
 				.setExecutionMode(ExecutionMode.STANDALONE)
