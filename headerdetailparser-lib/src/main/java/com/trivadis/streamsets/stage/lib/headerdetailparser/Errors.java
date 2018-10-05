@@ -13,7 +13,9 @@ public enum Errors implements ErrorCode {
   HEADERDETAILP_04("IOException attempting to parse whole file for record '{}': {}"),
   HEADERDETAILP_05("Empty detail line '{}': {}"),
   HEADERDETAILP_06("Empty blob"),
-  HEADERDETAILP_07("Cannot set field '{}' for record '{}', reason : {}")
+  HEADERDETAILP_07("Cannot set field '{}' for record '{}', reason : {}"),
+  HEADERDETAILP_08("IOException attempting to parse blob for record '{}': {}"),
+  HEADERDETAILP_09("IOException attempting to parse text for record '{}': {}")
   ;
   private final String msg;
 
