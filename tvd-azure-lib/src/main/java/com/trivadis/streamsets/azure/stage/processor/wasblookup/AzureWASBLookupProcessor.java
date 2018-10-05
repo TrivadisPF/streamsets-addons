@@ -138,7 +138,7 @@ public abstract class AzureWASBLookupProcessor extends SingleLaneRecordProcessor
 	    				.useSSE(true).build()));
 
 			    HashMap<String, Field> fileInfo = new HashMap<>();
-//			    fileInfo.put("size", Field.create(utf8str.length()));
+			    fileInfo.put("size", Field.create(AzureWASBUtil.getBlobProperties(blobClient, containerName, objectPath, true).getLength()));
 			    fileInfo.put("filename", Field.create(objectPath));
 			    record.set("/fileInfo", Field.create(fileInfo));
 				batchMaker.addRecord(record);

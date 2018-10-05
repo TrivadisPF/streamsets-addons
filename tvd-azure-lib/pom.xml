@@ -21,12 +21,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.azure</groupId>
   <artifactId>tvd-azure-lib</artifactId>
+  <version>0.3.0</version>
 
   <properties>
     <streamsets.version>3.4.1</streamsets.version>
     <slf4j.version>1.7.7</slf4j.version>
     <commons-io.version>2.6</commons-io.version>
-   	<azure-storage.version>7.0.0</azure-storage.version>
+   	<azure-storage.version>8.0.0</azure-storage.version>
     <junit.version>4.12</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -64,6 +65,33 @@
       <version>3.5.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.streamsets</groupId>
+      <artifactId>streamsets-datacollector-stagesupport</artifactId>
+      <version>3.5.0-SNAPSHOT</version>
+      <scope>provided</scope>
+	</dependency>
+    <dependency>
+    	<groupId>com.googlecode.json-simple</groupId>
+    	<artifactId>json-simple</artifactId>
+    	<version>1.1.1</version>
+	</dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>2.9.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.9.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>2.9.0</version>
+    </dependency>      
+      
              
     <!-- end -->
 
@@ -128,5 +156,4 @@
       </plugin>
     </plugins>
   </build>
-  <version>0.2.0</version>
 </project>
