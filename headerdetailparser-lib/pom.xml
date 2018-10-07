@@ -21,7 +21,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.headerdetailparser.stagelib</groupId>
   <artifactId>headerdetailparser-lib</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 
   <properties>
     <streamsets.version>3.4.1</streamsets.version>
@@ -76,6 +76,11 @@
       <artifactId>commons-io</artifactId>
       <version>${commons-io.version}</version>
     </dependency>
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>26.0-jre</version>
+</dependency>    
     <!-- end -->
 
     <!-- Test Dependencies -->
