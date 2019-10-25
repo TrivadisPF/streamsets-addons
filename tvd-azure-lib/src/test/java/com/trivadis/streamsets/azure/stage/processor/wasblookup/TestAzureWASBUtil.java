@@ -15,8 +15,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.microsoft.azure.storage.CloudStorageAccount;
+import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.BlobProperties;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
+import com.microsoft.azure.storage.blob.ListBlobItem;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.credential.CredentialValue;
 import com.trivadis.streamsets.azure.util.AzureWASBUtil;
@@ -92,10 +94,25 @@ public class TestAzureWASBUtil {
 	}
 	
 	@Test
-	public void testGetBlobProoperties() throws IOException {
+	public void testGetBlobProperties() throws IOException {
 		BlobProperties blob = AzureWASBUtil.getBlobProperties(blobClient, TEST_CONTAINER, "/" + TEST_OBJECT_PATH, true);
 		System.out.println("lenght:" + blob.getLength());
 		System.out.println(blob);
 	}	
-
+	
+	@Test
+	public void testListBlobs() throws IOException {
+		Iterable<ListBlobItem> list = AzureWASBUtil.listBlobs(blobClient, TEST_CONTAINER);
+		for (ListBlobItem item : list) {
+			try {
+				System.out.println(item.getContainer().getName() + ";" + item.getUri() + ";" + item.getUri().getPath());
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (StorageException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}	
 }

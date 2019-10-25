@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,7 @@ import com.microsoft.azure.storage.blob.BlobRequestOptions;
 import com.microsoft.azure.storage.blob.CloudBlob;
 import com.microsoft.azure.storage.blob.CloudBlobClient;
 import com.microsoft.azure.storage.blob.CloudBlobContainer;
+import com.microsoft.azure.storage.blob.ListBlobItem;
 //import com.streamsets.pipeline.api.StageException;
 //import com.streamsets.pipeline.api.credential.CredentialValue;
 
@@ -86,6 +88,23 @@ public class AzureWASBUtil {
 		return metadata;
 	}
 	
+	public static Iterable<ListBlobItem> listBlobs(CloudBlobClient blobClient, String containerName) throws IOException {
+		Map<String, String> metadata = null;
+		CloudBlobContainer container = null;
+		Iterable<ListBlobItem> list = null;
+		
+		try {
+			container = blobClient.getContainerReference(containerName);
+			container.createIfNotExists(BlobContainerPublicAccessType.CONTAINER, new BlobRequestOptions(),
+					new OperationContext());
+			list = container.listBlobs();
+		} catch (StorageException e) {
+			throw new IOException(e);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		return list;
+	}
 	
 	private final static String TEST_CONTAINER = "gus-test";
 	private final static String TEST_OBJECT_PATH = "big-test-wide.csv";

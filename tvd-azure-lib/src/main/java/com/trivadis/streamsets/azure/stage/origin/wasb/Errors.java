@@ -1,4 +1,4 @@
-package com.trivadis.streamsets.azure.stage.processor.wasblookup;
+package com.trivadis.streamsets.azure.stage.origin.wasb;
 
 /*
  * Copyright 2017 StreamSets Inc.
