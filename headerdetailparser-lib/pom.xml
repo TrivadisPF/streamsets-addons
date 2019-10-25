@@ -21,10 +21,10 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.trivadis.streamsets.headerdetailparser.stagelib</groupId>
   <artifactId>headerdetailparser-lib</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
 
   <properties>
-    <streamsets.version>3.4.1</streamsets.version>
+    <streamsets.version>3.11.0</streamsets.version>
     <utahparser.version>1.0.1</utahparser.version>
     <commons-lang.version>3.7</commons-lang.version>
     <commons-io.version>2.6</commons-io.version>
@@ -60,12 +60,14 @@
       <version>${streamsets.version}</version>
       <scope>provided</scope>
     </dependency> 
+<!--
     <dependency>
       <groupId>com.streamsets</groupId>
       <artifactId>streamsets-datacollector-common</artifactId>
-      <version>3.5.0-SNAPSHOT</version>
+      <version>3.12.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>    
+-->
 <dependency>
     <groupId>org.apache.commons</groupId>
     <artifactId>commons-lang3</artifactId>
