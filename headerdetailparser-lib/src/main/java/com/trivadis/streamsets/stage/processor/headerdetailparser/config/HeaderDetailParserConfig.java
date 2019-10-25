@@ -55,7 +55,7 @@ public class HeaderDetailParserConfig {
 	@ConfigDef(
 		      required = true,
 		      type = ConfigDef.Type.STRING,
-		      defaultValue = "detail",
+		      defaultValue = "/detail",
 		      label = "Detail Line Field",
 		      description="Output field into which the detail line will parsed.",
 		      displayPosition = 60,
