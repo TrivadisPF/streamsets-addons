@@ -116,7 +116,7 @@ public abstract class AwsS3LookupProcessor extends SingleLaneRecordProcessor {
 
 				S3ObjectSummary s3ObjectSummary = new S3ObjectSummary();
 				s3ObjectSummary.setBucketName(s3ConfigBean.s3Config.bucket);
-				s3ObjectSummary.setKey(getConfig().objectPath);
+				s3ObjectSummary.setKey(objectPath);
 				s3ObjectSummary.setSize(metadata.getContentLength());
 				s3ObjectSummary.setETag(metadata.getETag());
 				s3ObjectSummary.setLastModified(metadata.getLastModified());
