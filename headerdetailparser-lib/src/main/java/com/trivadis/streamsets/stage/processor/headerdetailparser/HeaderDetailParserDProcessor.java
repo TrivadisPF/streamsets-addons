@@ -15,18 +15,14 @@
  */
 package com.trivadis.streamsets.stage.processor.headerdetailparser;
 
-import java.util.List;
-
 import com.streamsets.pipeline.api.ConfigDefBean;
 import com.streamsets.pipeline.api.ConfigGroups;
 import com.streamsets.pipeline.api.GenerateResourceBundle;
 import com.streamsets.pipeline.api.StageDef;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DataFormatType;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserDetailsConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserHeaderConfig;
 import com.trivadis.streamsets.stage.processor.headerdetailparser.config.HeaderDetailParserOutputStreams;
-import com.trivadis.streamsets.stage.processor.headerdetailparser.config.DetailsColumnHeaderType;
 
 
 @StageDef(version = 1, 
