@@ -49,7 +49,7 @@ public class HeaderDetailParserDetailsConfig {
 	
 	@ConfigDef(
 	      required = false,
-	      type = ConfigDef.Type.LIST,
+	      type = ConfigDef.Type.MODEL,
 	      defaultValue = "[\"/fieldSplit1\", \"/fieldSplit2\"]",
 	      label = "New Split Fields",
 	      description="New fields to pass split data. The last field includes any remaining unsplit data.",
@@ -60,6 +60,7 @@ public class HeaderDetailParserDetailsConfig {
 	      displayPosition = 30,
 	      group = "DETAILS"
 	  )
+	@FieldSelectorModel(singleValued = false)
 	public List<String> fieldPathsForSplits;
 
 	@ConfigDef(
