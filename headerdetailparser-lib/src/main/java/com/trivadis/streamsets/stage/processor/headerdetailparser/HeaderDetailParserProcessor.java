@@ -348,7 +348,11 @@ public abstract class HeaderDetailParserProcessor extends RecordProcessor {
 		            if (splits != null && splits.length > i) {
 		              listMap.put(fieldPaths[i], Field.create(splits[i]));
 		            } else {
-		              listMap.put(fieldPaths[i], Field.create(Field.Type.STRING, null));
+		              if (getDetailsConfig().useNULLforFieldsWithoutSplitValue) {
+		            	  listMap.put(fieldPaths[i], Field.create(Field.Type.STRING, null));
+		              } else {
+		            	  listMap.put(fieldPaths[i], Field.create(Field.Type.STRING, ""));
+		              }
 		            }
 		          } catch (IllegalArgumentException e) {
 		            throw new OnRecordErrorException(Errors.HEADERDETAILP_07, fieldPaths[i], record.getHeader().getSourceId(),

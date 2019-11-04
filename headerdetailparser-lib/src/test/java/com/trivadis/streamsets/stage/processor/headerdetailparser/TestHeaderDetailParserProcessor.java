@@ -603,7 +603,7 @@ public class TestHeaderDetailParserProcessor {
 	
 	@Test
 	@SuppressWarnings("unchecked")
-	public void test_noHeader_splitDetailsUsingTooManyFields() throws StageException, IOException {
+	public void test_noHeader_splitDetailsUsingTooManyFieldsAsNULL() throws StageException, IOException {
 
 		// prepare parser config
 		processor.parserConfig.splitDetails = true;
@@ -653,6 +653,61 @@ public class TestHeaderDetailParserProcessor {
 		assertEquals("-500.0321", headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_1").getValueAsString());
 		assertNull(headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_2").getValueAsString());
 		assertNull(headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_3").getValueAsString());
+	}	
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_noHeader_splitDetailsUsingTooManyFieldsAsBlankString() throws StageException, IOException {
+
+		// prepare parser config
+		processor.parserConfig.splitDetails = true;
+		processor.parserConfig.detailLineField = "/detail";
+
+		// prepare header config
+		processor.headerConfig = getHeaderConfigNoHeaders(null, 0);
+
+		// prepare details config
+		processor.detailsConfig.detailsColumnHeaderType = DetailsColumnHeaderType.IGNORE_HEADER;
+		
+		processor.detailsConfig.onStagePreConditionFailure = OnStagePreConditionFailure.CONTINUE;
+		processor.detailsConfig.tooManySplitsAction = TooManySplitsAction.TO_LAST_FIELD;
+		
+		processor.detailsConfig.fieldPathsForSplits = new ArrayList<String>();
+		processor.detailsConfig.fieldPathsForSplits.add("/timeAndDate");
+		processor.detailsConfig.fieldPathsForSplits.add("/pt100_0");
+		processor.detailsConfig.fieldPathsForSplits.add("/pt100_1");
+		processor.detailsConfig.fieldPathsForSplits.add("/pt100_2");		// does not exist in data
+		processor.detailsConfig.fieldPathsForSplits.add("/pt100_3");		// does not exist in data
+		processor.detailsConfig.useNULLforFieldsWithoutSplitValue = false;
+		
+		runner = new ProcessorRunner.Builder(HeaderDetailParserDProcessor.class, processor)
+				.setExecutionMode(ExecutionMode.STANDALONE)
+				.setResourcesDir("/tmp")
+				.addOutputLane("header").addOutputLane("headerDetails")
+				.build();
+		runner.runInit();
+
+		// run the test
+		List<Record> headers = null;
+		List<Record> headerDetails = null;
+		try {
+			List<Record> input = prepareInput(TEST_FILE_WITHOUT_HEADER_BUT_WITH_DETAILS_COL_HEADER_3COLS);
+			StageRunner.Output output = runner.runProcess(input);
+
+			headers = output.getRecords().get("header");
+			headerDetails = output.getRecords().get("headerDetails");
+			
+
+		} finally {
+			runner.runDestroy();
+		}
+
+		// assert
+		assertEquals("11:02:12.050 10/10/2016", headerDetails.get(0).get("/detail").getValueAsListMap().get("/timeAndDate").getValueAsString());
+		assertEquals("500.2231", headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_0").getValueAsString());
+		assertEquals("-500.0321", headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_1").getValueAsString());
+		assertEquals("", headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_2").getValueAsString());
+		assertEquals("", headerDetails.get(0).get("/detail").getValueAsListMap().get("/pt100_3").getValueAsString());
 	}	
 
 	

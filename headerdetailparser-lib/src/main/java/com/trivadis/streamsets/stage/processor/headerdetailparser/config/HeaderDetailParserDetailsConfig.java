@@ -45,7 +45,7 @@ public class HeaderDetailParserDetailsConfig {
 		      displayPosition = 25,
 		      group = "DETAILS"
 		  )
-	public boolean separatorAsRegex;
+	public boolean separatorAsRegex = true;
 	
 	@ConfigDef(
 	      required = false,
@@ -77,7 +77,20 @@ public class HeaderDetailParserDetailsConfig {
 	@ValueChooserModel(OnStagePreConditionFailureChooserValues.class)
 	public OnStagePreConditionFailure onStagePreConditionFailure;
 
-
+	@ConfigDef(
+		      required = true,
+		      type = ConfigDef.Type.BOOLEAN,
+		      defaultValue = "true",
+		      label = "NULL for fields without split values",
+		      description = "Use NULL for field path without split values. Otherwise use a blank string.",
+		      displayPosition = 42,
+		      dependsOn = "onStagePreConditionFailure",
+		      triggeredByValue = "CONTINUE",
+		      group = "DETAILS"
+	)
+	@FieldSelectorModel(singleValued = true)
+	public boolean useNULLforFieldsWithoutSplitValue = true;
+	
 	@ConfigDef(
 		      required = true,
 		      type = ConfigDef.Type.MODEL,
