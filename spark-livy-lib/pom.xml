@@ -25,7 +25,7 @@
   <properties>
     <streamsets.version>3.11.0</streamsets.version>
     <slf4j.version>1.7.7</slf4j.version>
-    <commons-io.version>2.6</commons-io.version>
+    <commons-io.version>2.7</commons-io.version>
    	<azure-storage.version>8.0.0</azure-storage.version>
     <junit.version>4.12</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
